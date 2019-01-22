@@ -203,6 +203,8 @@ func TestGetAdmin(t *testing.T) {
 	a.EqualValues(0, len(subs), "there must be zero admin since none were added")
 	// Test getting real subscriber
 	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
+	sub.CreateSub("myContacNameTest2", "apiValueHere", false, false)
+	sub.CreateSub("myContacNameTest3", "apiValueHere", false, false)
 	subs = sub.GetAdmins()
 	a.EqualValues(1, len(subs), "there must be one admin")
 	a.True(subs[0].IsAdmin(), "the user must be marked as an admin")
@@ -217,6 +219,9 @@ func TestGetIgnored(t *testing.T) {
 	a.EqualValues(0, len(subs), "there must be zero ignored users since none were added")
 	// Test getting real subscriber
 	sub.CreateSub("myContacNameTest", "apiValueHere", false, true)
+	sub.CreateSub("myContacNameTest1", "apiValueHere", true, false)
+	sub.CreateSub("myContacNameTest2", "apiValueHere", false, false)
+	sub.CreateSub("myContacNameTest3", "apiValueHere", false, false)
 	subs = sub.GetIgnored()
 	a.EqualValues(1, len(subs), "there must be one ignored user")
 	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
