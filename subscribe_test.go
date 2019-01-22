@@ -30,7 +30,7 @@ func TestGetDB(t *testing.T) {
 	sub, err := GetDB("")
 	a.Nil(err, "getting an empty db must produce no error")
 	json, err := sub.GetStateJSON()
-	a.EqualValues(`{"events":{},"subscribers":[]}`, string(json), "the initial state must be empty")
+	a.EqualValues(`{"enabled_apis":[],"events":{},"subscribers":[]}`, string(json), "the initial state must be empty")
 	a.Nil(err, "getting an empty state must produce no error")
 }
 
@@ -46,7 +46,7 @@ func TestLoadStateFile(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	// test with good data.
-	testJSON := `{"events":{},"subscribers":[{"api":"http","contact":"testUser","events":{},"is_admin":false,"ignored":false}]}`
+	testJSON := `{"enabled_apis":[],"events":{},"subscribers":[{"api":"http","contact":"testUser","events":{},"is_admin":false,"ignored":false}]}`
 	a.Nil(ioutil.WriteFile(testFile, []byte(testJSON), 0644), "problem writing test file")
 	sub, err := GetDB(testFile)
 	a.Nil(err, "there must be no error loading the state file")
@@ -59,7 +59,7 @@ func TestLoadStateFile(t *testing.T) {
 	a.Nil(err, "there must be no error when the state file is missing")
 	data, err := ioutil.ReadFile(testFile)
 	a.Nil(err, "error reading test file")
-	a.EqualValues(`{"events":{},"subscribers":[]}`, string(data), "the initial state file must be empty")
+	a.EqualValues(`{"enabled_apis":[],"events":{},"subscribers":[]}`, string(data), "the initial state file must be empty")
 	// Test uncreatable file.
 	_, err = GetDB("/tmp/xxx/yyy/zzz/aaa/bbb/this_file_dont_exist")
 	a.NotNil(err, "there must be an error when the state cannot be created")
@@ -115,7 +115,7 @@ func TestGetEvent(t *testing.T) {
 func TestUpdateEvent(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	sub.UpdateEvent("event_test", nil)
 	a.NotNil(sub.Events["event_test"], "the event rules map must not be nil")
 	a.EqualValues(0, len(sub.Events["event_test"]), "the event rules map must have zero length")
@@ -141,7 +141,7 @@ func TestUpdateEvent(t *testing.T) {
 func TestRemoveEvent(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	a.EqualValues(0, sub.RemoveEvent("no_event"), "event had no subscribers and must not produce any deletions")
 	// Make two events to remove.
 	sub.Events["some_event"] = nil
@@ -158,7 +158,7 @@ func TestRemoveEvent(t *testing.T) {
 func TestCreateSub(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
 	a.EqualValues(1, len(sub.Subscribers), "there must be one subscriber")
 	a.True(sub.Subscribers[0].Admin, "admin must be true")
@@ -180,24 +180,20 @@ func TestCreateSub(t *testing.T) {
 func TestGetSubscriber(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	// Test missing subscriber
 	_, err := sub.GetSubscriber("im not here", "fake")
 	a.EqualValues(ErrorSubscriberNotFound, err, "must have a subscriber not found error")
 	// Test getting real subscriber
 	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
-	s, err := sub.GetSubscriber("myContacNameTest", "apiValueHere")
+	_, err = sub.GetSubscriber("myContacNameTest", "apiValueHere")
 	a.Nil(err, "must not produce an error getting existing subscriber")
-	a.EqualValues("myContacNameTest", s.GetContact(), "wrong contact value returned")
-	a.EqualValues("apiValueHere", s.GetAPI(), "wrong api value returned")
-	a.True(s.IsAdmin(), "wrong admin value returned")
-	a.False(s.IsIgnored(), "wrong ignore value returned")
 }
 
-func TestGetAdmin(t *testing.T) {
+func TestAdmin(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	// Test missing subscriber
 	subs := sub.GetAdmins()
 	a.EqualValues(0, len(subs), "there must be zero admin since none were added")
@@ -207,17 +203,12 @@ func TestGetAdmin(t *testing.T) {
 	sub.CreateSub("myContacNameTest3", "apiValueHere", false, false)
 	subs = sub.GetAdmins()
 	a.EqualValues(1, len(subs), "there must be one admin")
-	a.True(subs[0].IsAdmin(), "the user must be marked as an admin")
-	subs[0].Unadmin()
-	a.False(subs[0].IsAdmin(), "the user must no longer be marked as admin")
-	subs[0].MakeAdmin()
-	a.True(subs[0].IsAdmin(), "the user must now be marked as admin")
 }
 
-func TestGetIgnored(t *testing.T) {
+func TestIgnore(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	// Test missing subscriber
 	subs := sub.GetIgnored()
 	a.EqualValues(0, len(subs), "there must be zero ignored users since none were added")
@@ -228,17 +219,12 @@ func TestGetIgnored(t *testing.T) {
 	sub.CreateSub("myContacNameTest3", "apiValueHere", false, false)
 	subs = sub.GetIgnored()
 	a.EqualValues(1, len(subs), "there must be one ignored user")
-	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
-	subs[0].Unignore()
-	a.False(subs[0].IsIgnored(), "the user must no longer be marked as ignored")
-	subs[0].Ignore()
-	a.True(subs[0].IsIgnored(), "the user must be marked as ignored again")
 }
 
 func TestGetAllSubscribers(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	// Test missing subscriber
 	subs := sub.GetAllSubscribers()
 	a.EqualValues(0, len(subs), "there must be zero subs since none were added")
@@ -246,17 +232,15 @@ func TestGetAllSubscribers(t *testing.T) {
 	sub.CreateSub("myContacNameTest", "apiValueHere", false, true)
 	subs = sub.GetAllSubscribers()
 	a.EqualValues(1, len(subs), "there must be one sub")
-	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
 	sub.CreateSub("myContacNameTest2", "apiValueHere2", true, false)
 	subs = sub.GetAllSubscribers()
 	a.EqualValues(2, len(subs), "there must be two subs")
-	a.True(subs[0].IsIgnored(), "the first user must still be marked as ignored")
 }
 
 func TestUnSubscribe(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	// Add 1 subscriber and 3 subscriptions.
 	s := sub.CreateSub("myContacNameTest", "apiValueHere", true, true)
 	a.Nil(s.Subscribe("event_name"))
@@ -277,7 +261,7 @@ func TestUnSubscribe(t *testing.T) {
 func TestPause(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	s := sub.CreateSub("contact", "api", true, false)
 	a.Nil(s.Subscribe("eventName"))
 	// Make sure pausing a missing event returns the proper error.
@@ -293,7 +277,7 @@ func TestPause(t *testing.T) {
 func TestGetSubscribers(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &subscribe{Events: make(map[string]map[string]string)}
+	sub := &Subscribe{Events: make(map[string]map[string]string)}
 	subs := sub.GetSubscribers("evn")
 	a.EqualValues(0, len(subs), "there must be no subscribers")
 	// Add 1 subscriber and 3 subscriptions.

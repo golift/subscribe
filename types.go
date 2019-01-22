@@ -13,60 +13,46 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-// ErrorSubIDNotFound and the rest are error strings.
 const (
+	// ErrorSubscriberNotFound is returned any time a requested subscriber does not exist.
 	ErrorSubscriberNotFound = Error("subscriber not found")
-	ErrorEventNotFound      = Error("event not found")
-	ErrorEventExists        = Error("event already exists")
+	// ErrorEventNotFound is returned when a requested event has not been created.
+	ErrorEventNotFound = Error("event not found")
+	// ErrorEventExists is returned when a new event with an existing name is created.
+	ErrorEventExists = Error("event already exists")
 )
 
-// subscriber describes the contact info and subscriptions for a person.
-type subscriber struct {
-	API          string               `json:"api"`
-	Contact      string               `json:"contact"`
-	Events       map[string]time.Time `json:"events"`
-	Admin        bool                 `json:"is_admin"`
-	Ignored      bool                 `json:"ignored"`
-	sync.RWMutex                      // Locks subs/events maps
+type subscriberEvents map[string]time.Time
+type subscribeEvents map[string]map[string]string
+
+// Subscriber describes the contact info and subscriptions for a person.
+type Subscriber struct {
+	// API is the type of API the subscriber is subscribed with.
+	API string `json:"api"`
+	// Contact is the contact info used in the API to send the subscriber a notification.
+	Contact string `json:"contact"`
+	// Events is a list of events the subscriber is subscribed to, including a cooldown/pause time.
+	Events subscriberEvents `json:"events"`
+	// This is just extra data that can be used to make the user special.
+	Admin bool `json:"is_admin"`
+	// Ignored will exclude a user from GetSubscribers().
+	Ignored bool `json:"ignored"`
+	// sync.RWMutex Locks/UnlocksE vents map
+	sync.RWMutex
 }
 
-// subscribe is the data needed to initialize this module.
-type subscribe struct {
-	enableAPIs   []string                     // imessage, skype, pushover, email, slack, growl, all, any
-	stateFile    string                       // like: /usr/local/var/lib/motifini/subscribers.json
-	Events       map[string]map[string]string `json:"events"`
-	Subscribers  []subscriber                 `json:"subscribers"`
-	sync.RWMutex                              // Locks events
-}
-
-// SubDB allows us to mock this library when doing external testing.
-type SubDB interface {
-	GetEvents() map[string]map[string]string
-	UpdateEvent(eventName string, rules map[string]string) (count bool)
-	RemoveEvent(eventName string) (removed int)
-	GetEvent(name string) (rules map[string]string, err error)
-	CreateSub(contact, api string, admin, ignore bool) (subscriber SubInterface)
-	GetSubscriber(contact, api string) (subscriber SubInterface, err error)
-	GetAdmins() (subscribers []SubInterface)
-	GetIgnored() (subscribers []SubInterface)
-	GetAllSubscribers() (subscribers []SubInterface)
-	GetSubscribers(eventName string) (subscribers []SubInterface)
-	SaveStateFile() error
-	GetStateJSON() (string, error)
-}
-
-// SubInterface allows mocks to methods against a subscriber.
-type SubInterface interface {
-	GetAPI() string
-	GetContact() string
-	Ignore()
-	Unignore()
-	IsIgnored() bool
-	IsAdmin() bool
-	MakeAdmin()
-	Unadmin()
-	Subscriptions() (events map[string]time.Time)
-	Subscribe(string) error
-	UnSubscribe(string) error
-	Pause(string, time.Duration) error
+// Subscribe is the data needed to initialize this module.
+type Subscribe struct {
+	// EnableAPIs sets the allowed APIs. Only subscriptions that have an API
+	// with a prefix in this list will return from the GetSubscribers() method.
+	EnableAPIs []string `json:"enabled_apis"` // imessage, skype, pushover, email, slack, growl, all, any
+	// stateFile is the db location, like: /usr/local/var/lib/motifini/subscribers.json
+	stateFile string
+	// Events stores a list of arbitrary events. Use the included methods to interact with it.
+	// This does not affect GetSubscribers().
+	Events subscribeEvents `json:"events"`
+	// Subscribers is a list of all Subscribers.
+	Subscribers []*Subscriber `json:"subscribers"`
+	// sync.RWMutex locks and unlocks the Events map
+	sync.RWMutex
 }
