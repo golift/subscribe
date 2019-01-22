@@ -194,6 +194,52 @@ func TestGetSubscriber(t *testing.T) {
 	a.False(s.IsIgnored(), "wrong ignore value returned")
 }
 
+func TestGetAdmin(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &subscribe{Events: make(map[string]map[string]string)}
+	// Test missing subscriber
+	subs := sub.GetAdmins()
+	a.EqualValues(0, len(subs), "there must be zero admin since none were added")
+	// Test getting real subscriber
+	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
+	subs = sub.GetAdmins()
+	a.EqualValues(1, len(subs), "there must be one admin")
+	a.True(subs[0].IsAdmin(), "the user must be marked as an admin")
+}
+
+func TestGetIgnored(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &subscribe{Events: make(map[string]map[string]string)}
+	// Test missing subscriber
+	subs := sub.GetIgnored()
+	a.EqualValues(0, len(subs), "there must be zero ignored users since none were added")
+	// Test getting real subscriber
+	sub.CreateSub("myContacNameTest", "apiValueHere", false, true)
+	subs = sub.GetIgnored()
+	a.EqualValues(1, len(subs), "there must be one ignored user")
+	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
+}
+
+func TestGetAllSubscribers(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &subscribe{Events: make(map[string]map[string]string)}
+	// Test missing subscriber
+	subs := sub.GetAllSubscribers()
+	a.EqualValues(0, len(subs), "there must be zero subs since none were added")
+	// Test getting real subscriber
+	sub.CreateSub("myContacNameTest", "apiValueHere", false, true)
+	subs = sub.GetAllSubscribers()
+	a.EqualValues(1, len(subs), "there must be one sub")
+	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
+	sub.CreateSub("myContacNameTest2", "apiValueHere2", true, false)
+	subs = sub.GetAllSubscribers()
+	a.EqualValues(2, len(subs), "there must be two subs")
+	a.True(subs[0].IsIgnored(), "the first user must still be marked as ignored")
+}
+
 func TestUnSubscribe(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)

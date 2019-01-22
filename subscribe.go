@@ -175,7 +175,7 @@ func (s *subscribe) GetIgnored() (subs []SubInterface) {
 	return
 }
 
-// GetIgnored returns a list of ignored subscribers.
+// GetAllSubscribers returns a list of all subscribers.
 func (s *subscribe) GetAllSubscribers() (subs []SubInterface) {
 	for i := range s.Subscribers {
 		subs = append(subs, &s.Subscribers[i])
