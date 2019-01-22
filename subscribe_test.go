@@ -55,7 +55,7 @@ func TestLoadStateFile(t *testing.T) {
 	a.EqualValues(testJSON, string(json))
 	// Test missing file.
 	a.Nil(os.RemoveAll(testFile), "problem removing test file")
-	sub, err = GetDB(testFile)
+	_, err = GetDB(testFile)
 	a.Nil(err, "there must be no error when the state file is missing")
 	data, err := ioutil.ReadFile(testFile)
 	a.Nil(err, "error reading test file")
@@ -208,6 +208,10 @@ func TestGetAdmin(t *testing.T) {
 	subs = sub.GetAdmins()
 	a.EqualValues(1, len(subs), "there must be one admin")
 	a.True(subs[0].IsAdmin(), "the user must be marked as an admin")
+	subs[0].Unadmin()
+	a.False(subs[0].IsAdmin(), "the user must no longer be marked as admin")
+	subs[0].MakeAdmin()
+	a.True(subs[0].IsAdmin(), "the user must now be marked as admin")
 }
 
 func TestGetIgnored(t *testing.T) {
@@ -225,6 +229,10 @@ func TestGetIgnored(t *testing.T) {
 	subs = sub.GetIgnored()
 	a.EqualValues(1, len(subs), "there must be one ignored user")
 	a.True(subs[0].IsIgnored(), "the user must be marked as ignored")
+	subs[0].Unignore()
+	a.False(subs[0].IsIgnored(), "the user must no longer be marked as ignored")
+	subs[0].Ignore()
+	a.True(subs[0].IsIgnored(), "the user must be marked as ignored again")
 }
 
 func TestGetAllSubscribers(t *testing.T) {
