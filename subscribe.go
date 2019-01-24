@@ -1,8 +1,7 @@
 package subscribe
 
 /* Subscriptions Library!
-    Reasonably Generic and fully tested. May work in your application!
-		Check out the interfaces in types.go to get an idea how it works.
+   Reasonably Generic and fully tested. May work in your application!
 */
 import (
 	"encoding/json"

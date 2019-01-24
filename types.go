@@ -23,11 +23,10 @@ const (
 )
 
 type subscriberEvents map[string]time.Time
-type subscribeEvents map[string]map[string]string
 
 // Subscriber describes the contact info and subscriptions for a person.
 type Subscriber struct {
-	// API is the type of API the subscriber is subscribed with.
+	// API is the type of API the subscriber is subscribed with. Used to filter results.
 	API string `json:"api"`
 	// Contact is the contact info used in the API to send the subscriber a notification.
 	Contact string `json:"contact"`
@@ -40,6 +39,8 @@ type Subscriber struct {
 	// sync.RWMutex Locks/UnlocksE vents map
 	sync.RWMutex
 }
+
+type subscribeEvents map[string]map[string]string
 
 // Subscribe is the data needed to initialize this module.
 type Subscribe struct {
