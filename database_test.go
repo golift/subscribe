@@ -73,6 +73,7 @@ func TestStateFileRelocate(t *testing.T) {
 	a.Nil(err, "there must be no error when the state file does not exist")
 	a.Nil(sub.StateFileSave(), "there must be no error when the state file does not exist")
 	err = sub.StateFileRelocate(testFile4)
+	a.EqualValues(testFile4, sub.stateFile, "the path was not to the new value")
 	a.Nil(err, "there must be no error creating the initial state file")
 	err = sub.StateFileRelocate("/tmp")
 	a.NotNil(err, "there must be an error trying to write a file as a /tmp folder")
