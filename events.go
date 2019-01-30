@@ -26,8 +26,10 @@ func (e *events) Get(name string) (Rules, error) {
 	return nil, ErrorEventNotFound
 }
 
-// Update adds or updates an event.
-func (e *events) Update(name string, rules Rules) bool {
+// Update adds or updates an event. Returns true for new events.
+// Returns false if an existing event's rules were updated.
+// Empty rules are removed. Existing rules are replaced.
+func (e *events) Update(name string, rules Rules) (new bool) {
 	e.Lock()
 	defer e.Unlock()
 	if rules == nil {
@@ -35,7 +37,7 @@ func (e *events) Update(name string, rules Rules) bool {
 	}
 	if _, ok := e.Map[name]; !ok {
 		e.Map[name] = rules
-		return true
+		new = true
 	}
 	for ruleName, rule := range rules {
 		if rule == "" {
@@ -44,7 +46,7 @@ func (e *events) Update(name string, rules Rules) bool {
 			e.Map[name][ruleName] = rule
 		}
 	}
-	return false
+	return
 }
 
 // Remove deletes an event, and orphans any subscriptions.
@@ -55,10 +57,11 @@ func (e *events) Remove(name string) {
 }
 
 // EventRemove obliterates an event and all subsciptions for it.
-func (s *Subscribe) EventRemove(name string) (removed int) {
-	s.Events.Remove(name)
+// Returns the number of subscriptions removed.
+func (s *Subscribe) EventRemove(eventName string) (removed int) {
+	s.Events.Remove(eventName)
 	for _, sub := range s.Subscribers {
-		if sub.UnSubscribe(name) == nil {
+		if sub.UnSubscribe(eventName) == nil {
 			removed++
 		}
 	}

@@ -24,25 +24,26 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 			Map: make(map[string]subEventInfo),
 		},
 	})
-	return s.Subscribers[len(s.Subscribers)-1:][0]
+	return s.Subscribers[len(s.Subscribers)-1]
 }
+
+/* Convenience methods to access specific types of subscribers. */
 
 // GetSubscriber gets a subscriber based on their contact info.
 func (s *Subscribe) GetSubscriber(contact, api string) (*Subscriber, error) {
-	sub := &Subscriber{}
-	for i := range s.Subscribers {
-		if s.Subscribers[i].Contact == contact && s.Subscribers[i].API == api {
-			return s.Subscribers[i], nil
+	for _, sub := range s.Subscribers {
+		if sub.Contact == contact && sub.API == api {
+			return sub, nil
 		}
 	}
-	return sub, ErrorSubscriberNotFound
+	return nil, ErrorSubscriberNotFound
 }
 
 // GetAdmins returns a list of subscribed admins.
 func (s *Subscribe) GetAdmins() (subs []*Subscriber) {
-	for i := range s.Subscribers {
-		if s.Subscribers[i].Admin {
-			subs = append(subs, s.Subscribers[i])
+	for _, sub := range s.Subscribers {
+		if sub.Admin {
+			subs = append(subs, sub)
 		}
 	}
 	return
@@ -50,18 +51,10 @@ func (s *Subscribe) GetAdmins() (subs []*Subscriber) {
 
 // GetIgnored returns a list of ignored subscribers.
 func (s *Subscribe) GetIgnored() (subs []*Subscriber) {
-	for i := range s.Subscribers {
-		if s.Subscribers[i].Ignored {
-			subs = append(subs, s.Subscribers[i])
+	for _, sub := range s.Subscribers {
+		if sub.Ignored {
+			subs = append(subs, sub)
 		}
-	}
-	return
-}
-
-// GetAllSubscribers returns a list of all subscribers.
-func (s *Subscribe) GetAllSubscribers() (subs []*Subscriber) {
-	for i := range s.Subscribers {
-		subs = append(subs, s.Subscribers[i])
 	}
 	return
 }

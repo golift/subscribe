@@ -72,19 +72,3 @@ func TestIgnore(t *testing.T) {
 	subs = sub.GetIgnored()
 	a.EqualValues(1, len(subs), "there must be one ignored user")
 }
-
-func TestGetAllSubscribers(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-	sub := &Subscribe{Events: new(events)}
-	// Test missing subscriber
-	subs := sub.GetAllSubscribers()
-	a.EqualValues(0, len(subs), "there must be zero subs since none were added")
-	// Test getting real subscriber
-	sub.CreateSub("myContacNameTest", "apiValueHere", false, true)
-	subs = sub.GetAllSubscribers()
-	a.EqualValues(1, len(subs), "there must be one sub")
-	sub.CreateSub("myContacNameTest2", "apiValueHere2", true, false)
-	subs = sub.GetAllSubscribers()
-	a.EqualValues(2, len(subs), "there must be two subs")
-}

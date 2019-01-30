@@ -11,6 +11,7 @@ import (
  ****************************/
 
 // Subscribe adds an event subscription to a subscriber.
+// Returns an error only if the event subscription already exists.
 func (s *Subscriber) Subscribe(eventName string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
@@ -24,6 +25,7 @@ func (s *Subscriber) Subscribe(eventName string) error {
 }
 
 // UnSubscribe a subscriber from an event subscription.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) UnSubscribe(eventName string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
@@ -35,11 +37,13 @@ func (s *Subscriber) UnSubscribe(eventName string) error {
 }
 
 // UnPause resumes a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) UnPause(eventName string) error {
 	return s.Pause(eventName, 0)
 }
 
 // Pause (or unpause with 0 duration) a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) Pause(eventName string, duration time.Duration) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
@@ -53,16 +57,19 @@ func (s *Subscriber) Pause(eventName string, duration time.Duration) error {
 }
 
 // IsPaused returns true if the event's notifications are pasued.
+// Returns true if the event subscription does not exist.
 func (s *Subscriber) IsPaused(eventName string) bool {
 	s.Events.RLock()
 	defer s.Events.RUnlock()
-	if info, ok := s.Events.Map[eventName]; ok {
-		return info.Pause.After(time.Now())
+	info, ok := s.Events.Map[eventName]
+	if !ok {
+		return true
 	}
-	return true
+	return info.Pause.After(time.Now())
 }
 
 // RuleExists returns true if an event rule exists.
+// Returns false if the event subscription or rule do not exist.
 func (s *Subscriber) RuleExists(eventName string, ruleName string) bool {
 	s.Events.RLock()
 	defer s.Events.RUnlock()
@@ -77,58 +84,67 @@ func (s *Subscriber) RuleExists(eventName string, ruleName string) bool {
 }
 
 // RulesGet returns a subscriber's event subscription rules.
+// Returns an empty slice if the event subscription does not exist (or has no rules).
 func (s *Subscriber) RulesGet(eventName string) []string {
 	s.Events.RLock()
 	defer s.Events.RUnlock()
-	if info, ok := s.Events.Map[eventName]; ok {
-		return info.Rules
+	info, ok := s.Events.Map[eventName]
+	if !ok {
+		return []string{}
 	}
-	return []string{}
+	return info.Rules
 }
 
 // RulesReplace replaces a subscriber's event subscription rules with new rules.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) RulesReplace(eventName string, newRules []string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
-	if info, ok := s.Events.Map[eventName]; ok {
-		info.Rules = newRules
-		s.Events.Map[eventName] = info
-		return nil
+	info, ok := s.Events.Map[eventName]
+	if !ok {
+		return ErrorEventNotFound
 	}
-	return ErrorEventNotFound
+	info.Rules = newRules
+	s.Events.Map[eventName] = info
+	return nil
 }
 
 // RulesAdd appends new rule(s) to a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) RulesAdd(eventName string, appendRules []string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
-	if info, ok := s.Events.Map[eventName]; ok {
-		info.Rules = append(info.Rules, appendRules...)
-		s.Events.Map[eventName] = info
-		return nil
+	info, ok := s.Events.Map[eventName]
+	if !ok {
+		return ErrorEventNotFound
 	}
-	return ErrorEventNotFound
+	info.Rules = append(info.Rules, appendRules...)
+	s.Events.Map[eventName] = info
+	return nil
 }
 
 // RulesRemove removes a rule from a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
 func (s *Subscriber) RulesRemove(eventName string, rule string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
 	var newRules []string
-	if info, ok := s.Events.Map[eventName]; ok {
-		for _, r := range info.Rules {
-			if r != rule {
-				newRules = append(newRules, r)
-			}
-		}
-		info.Rules = newRules
-		s.Events.Map[eventName] = info
-		return nil
+	info, ok := s.Events.Map[eventName]
+	if !ok {
+		return ErrorEventNotFound
 	}
-	return ErrorEventNotFound
+	for _, r := range info.Rules {
+		if r != rule {
+			newRules = append(newRules, r)
+		}
+	}
+	info.Rules = newRules
+	s.Events.Map[eventName] = info
+	return nil
 }
 
 // Subscriptions returns a subscriber's event subscriptions (names).
+// Returns an empty slice if there are no subscriptions. Check the len().
 func (s *Subscriber) Subscriptions() []string {
 	s.Events.RLock()
 	defer s.Events.RUnlock()
