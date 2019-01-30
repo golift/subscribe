@@ -50,20 +50,17 @@ func (e *events) Update(name string, rules Rules) bool {
 // Remove deletes an event, and orphans any subscriptions.
 func (e *events) Remove(name string) {
 	e.Lock()
+	defer e.Unlock()
 	delete(e.Map, name)
-	e.Unlock()
 }
 
 // EventRemove obliterates an event and all subsciptions for it.
 func (s *Subscribe) EventRemove(name string) (removed int) {
 	s.Events.Remove(name)
-	for i := range s.Subscribers {
-		s.Subscribers[i].Events.Lock()
-		if _, ok := s.Subscribers[i].Events.Map[name]; ok {
-			delete(s.Subscribers[i].Events.Map, name)
+	for _, sub := range s.Subscribers {
+		if sub.UnSubscribe(name) == nil {
 			removed++
 		}
-		s.Subscribers[i].Events.Unlock()
 	}
 	return
 }

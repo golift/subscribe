@@ -8,4 +8,6 @@ to persist subscriptions to disk. The subscription database should scale
 to thousands of subscriptions with hundreds of request per second.
 If you need more, this library may not work for you; I do not know.
 
+Thread safe.
+
 TODO: Add example use.

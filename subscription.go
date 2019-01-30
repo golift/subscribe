@@ -146,7 +146,7 @@ func (s *Subscriber) Subscriptions() []string {
 // them notifications in your app. Subscribers can be people. Or functions.
 func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber) {
 	for _, sub := range s.Subscribers {
-		if !sub.Ignored && !sub.IsPaused(eventName) && s.checkAPI(sub.API) {
+		if !sub.Ignored && s.checkAPI(sub.API) && !sub.IsPaused(eventName) {
 			subscribers = append(subscribers, sub)
 		}
 	}
