@@ -20,7 +20,9 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 		API:     api,
 		Admin:   admin,
 		Ignored: ignore,
-		Events:  make(map[string]SubEventInfo),
+		Events: &subEvents{
+			Map: make(map[string]subEventInfo),
+		},
 	})
 	return s.Subscribers[len(s.Subscribers)-1:][0]
 }

@@ -1,6 +1,7 @@
 package subscribe
 
 import (
+	"sort"
 	"strings"
 	"time"
 )
@@ -11,48 +12,133 @@ import (
 
 // Subscribe adds an event subscription to a subscriber.
 func (s *Subscriber) Subscribe(eventName string) error {
-	s.Lock()
-	defer s.Unlock()
-	info, ok := s.Events[eventName]
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	info, ok := s.Events.Map[eventName]
 	if ok {
 		return ErrorEventExists
 	}
 	info.Pause = time.Now()
-	s.Events[eventName] = info
+	s.Events.Map[eventName] = info
 	return nil
 }
 
 // UnSubscribe a subscriber from an event subscription.
 func (s *Subscriber) UnSubscribe(eventName string) error {
-	s.Lock()
-	defer s.Unlock()
-	if _, ok := s.Events[eventName]; !ok {
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	if _, ok := s.Events.Map[eventName]; !ok {
 		return ErrorEventNotFound
 	}
-	delete(s.Events, eventName)
+	delete(s.Events.Map, eventName)
 	return nil
+}
+
+// UnPause resumes a subscriber's event subscription.
+func (s *Subscriber) UnPause(eventName string) error {
+	return s.Pause(eventName, 0)
 }
 
 // Pause (or unpause with 0 duration) a subscriber's event subscription.
 func (s *Subscriber) Pause(eventName string, duration time.Duration) error {
-	s.Lock()
-	defer s.Unlock()
-	info, ok := s.Events[eventName]
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	info, ok := s.Events.Map[eventName]
 	if !ok {
 		return ErrorEventNotFound
 	}
 	info.Pause = time.Now().Add(duration)
-	s.Events[eventName] = info
+	s.Events.Map[eventName] = info
 	return nil
 }
 
-// Subscriptions returns a subscriber's event subscriptions.
-func (s *Subscriber) Subscriptions() (events map[string]SubEventInfo) {
-	s.Lock()
-	defer s.Unlock()
-	events = s.Events
-	return
-} /* not tested */
+// IsPaused returns true if the event's notifications are pasued.
+func (s *Subscriber) IsPaused(eventName string) bool {
+	s.Events.RLock()
+	defer s.Events.RUnlock()
+	if info, ok := s.Events.Map[eventName]; ok {
+		return info.Pause.After(time.Now())
+	}
+	return true
+}
+
+// RuleExists returns true if an event rule exists.
+func (s *Subscriber) RuleExists(eventName string, ruleName string) bool {
+	s.Events.RLock()
+	defer s.Events.RUnlock()
+	if info, ok := s.Events.Map[eventName]; ok {
+		for _, r := range info.Rules {
+			if r == ruleName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// RulesGet returns a subscriber's event subscription rules.
+func (s *Subscriber) RulesGet(eventName string) []string {
+	s.Events.RLock()
+	defer s.Events.RUnlock()
+	if info, ok := s.Events.Map[eventName]; ok {
+		return info.Rules
+	}
+	return []string{}
+}
+
+// RulesReplace replaces a subscriber's event subscription rules with new rules.
+func (s *Subscriber) RulesReplace(eventName string, newRules []string) error {
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	if info, ok := s.Events.Map[eventName]; ok {
+		info.Rules = newRules
+		s.Events.Map[eventName] = info
+		return nil
+	}
+	return ErrorEventNotFound
+}
+
+// RulesAdd appends new rule(s) to a subscriber's event subscription.
+func (s *Subscriber) RulesAdd(eventName string, newRules []string) error {
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	if info, ok := s.Events.Map[eventName]; ok {
+		info.Rules = append(info.Rules, newRules...)
+		s.Events.Map[eventName] = info
+		return nil
+	}
+	return ErrorEventNotFound
+}
+
+// RulesRemove removes a rule from a subscriber's event subscription.
+func (s *Subscriber) RulesRemove(eventName string, rule string) error {
+	s.Events.Lock()
+	defer s.Events.Unlock()
+	var newRules []string
+	if info, ok := s.Events.Map[eventName]; ok {
+		for _, r := range info.Rules {
+			if r != rule {
+				newRules = append(newRules, r)
+			}
+		}
+		info.Rules = newRules
+		s.Events.Map[eventName] = info
+		return nil
+	}
+	return ErrorEventNotFound
+}
+
+// Subscriptions returns a subscriber's event subscriptions (names).
+func (s *Subscriber) Subscriptions() []string {
+	s.Events.RLock()
+	defer s.Events.RUnlock()
+	names := []string{}
+	for name := range s.Events.Map {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
 
 // GetSubscribers returns a list of valid event subscribers.
 func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber) {
@@ -60,7 +146,7 @@ func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber)
 		if s.Subscribers[i].Ignored {
 			continue
 		}
-		for event, evnData := range s.Subscribers[i].Events {
+		for event, evnData := range s.Subscribers[i].Events.Map {
 			if event == eventName && evnData.Pause.Before(time.Now()) && checkAPI(s.Subscribers[i].API, s.EnableAPIs) {
 				subscribers = append(subscribers, s.Subscribers[i])
 			}

@@ -1,6 +1,7 @@
 package subscribe
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -21,7 +22,7 @@ func TestCheckAPI(t *testing.T) {
 func TestUnSubscribe(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: make(Events)}
+	sub := &Subscribe{Events: new(events)}
 	// Add 1 subscriber and 3 subscriptions.
 	s := sub.CreateSub("myContacNameTest", "apiValueHere", true, true)
 	a.Nil(s.Subscribe("event_name"))
@@ -31,10 +32,10 @@ func TestUnSubscribe(t *testing.T) {
 	a.EqualValues(ErrorEventExists, s.Subscribe("event_name3"), "duplicate event allowed")
 	// Remove a subscription.
 	a.Nil(s.UnSubscribe("event_name3"))
-	a.EqualValues(2, len(sub.Subscribers[0].Events), "there must be two subscriptions remaining")
+	a.EqualValues(2, len(sub.Subscribers[0].Events.Map), "there must be two subscriptions remaining")
 	// Remove another.
 	a.Nil(s.UnSubscribe("event_name2"))
-	a.EqualValues(1, len(sub.Subscribers[0].Events), "there must be one subscription remaining")
+	a.EqualValues(1, len(sub.Subscribers[0].Events.Map), "there must be one subscription remaining")
 	// Make sure we get accurate error when removing a missing event subscription.
 	a.EqualValues(ErrorEventNotFound, s.UnSubscribe("event_name_not_here"))
 }
@@ -42,23 +43,81 @@ func TestUnSubscribe(t *testing.T) {
 func TestPause(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: make(Events)}
+	sub := &Subscribe{Events: new(events)}
 	s := sub.CreateSub("contact", "api", true, false)
 	a.Nil(s.Subscribe("eventName"))
 	// Make sure pausing a missing event returns the proper error.
 	a.EqualValues(ErrorEventNotFound, s.Pause("fake event", 0))
 	// Testing a real unpause.
 	a.Nil(s.Pause("eventName", 0))
-	a.WithinDuration(time.Now(), sub.Subscribers[0].Events["eventName"].Pause, 1*time.Second)
+	a.WithinDuration(time.Now(), sub.Subscribers[0].Events.Map["eventName"].Pause, 1*time.Second)
 	// Testing a real pause.
 	a.Nil(s.Pause("eventName", 3600*time.Second))
-	a.WithinDuration(time.Now().Add(3600*time.Second), sub.Subscribers[0].Events["eventName"].Pause, 1*time.Second)
+	a.WithinDuration(time.Now().Add(3600*time.Second), sub.Subscribers[0].Events.Map["eventName"].Pause, 1*time.Second)
+}
+
+func TestIsPaused(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &Subscribe{Events: new(events)}
+	s := sub.CreateSub("contact", "api", true, false)
+	// Go back and fourth a few times.
+	a.Nil(s.Subscribe("eventName"))
+	a.Nil(s.Pause("eventName", 0))
+	a.False(s.IsPaused("eventName"))
+	a.Nil(s.Pause("eventName", 10*time.Second))
+	a.True(s.IsPaused("eventName"))
+	a.Nil(s.UnPause("eventName"))
+	a.False(s.IsPaused("eventName"))
+	// Missing event is always paused.
+	a.True(s.IsPaused("missingEvent"))
+}
+
+func TestRules(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &Subscribe{Events: new(events)}
+	s := sub.CreateSub("contact", "api", true, false)
+	a.Nil(s.Subscribe("eventName"))
+	rules := []string{"rule1", "rule2", "rule3"}
+	a.Nil(s.RulesReplace("eventName", rules))
+	getRules := s.RulesGet("eventName")
+	a.Equal(rules, getRules)
+
+	// Make sure RulesAdd adds a rule.
+	a.Nil(s.RulesAdd("eventName", []string{"rule4"}))
+	a.True(s.RuleExists("eventName", "rule4"), "the rule must exist, it was just added")
+
+	// Check RulesRemove.
+	a.Nil(s.RulesRemove("eventName", "rule1"))
+	a.False(s.RuleExists("eventName", "rule1"), "the rule must be removed")
+
+	// Make sure these all do proper things when a missing event is requested.
+	a.EqualValues([]string{}, s.RulesGet("eventMissing"), "missing event must return empty ruleset")
+	a.EqualValues(ErrorEventNotFound, s.RulesReplace("eventMissing", rules))
+	a.EqualValues(ErrorEventNotFound, s.RulesRemove("eventMissing", "rule"))
+	a.EqualValues(ErrorEventNotFound, s.RulesAdd("eventMissing", rules))
+
+}
+
+func TestSubscriptions(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	sub := &Subscribe{Events: new(events)}
+	s := sub.CreateSub("contact", "api", true, false)
+	events := []string{"eventName", "eventName1", "eventName3", "eventName5"}
+	sort.Strings(events)
+	for _, e := range events {
+		a.Nil(s.Subscribe(e))
+	}
+	subs := s.Subscriptions()
+	a.Equal(events, subs, "wrong subscriptions provided")
 }
 
 func TestGetSubscribers(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: make(Events)}
+	sub := &Subscribe{Events: new(events)}
 	subs := sub.GetSubscribers("evn")
 	a.EqualValues(0, len(subs), "there must be no subscribers")
 	// Add 1 subscriber and 3 subscriptions.

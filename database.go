@@ -6,24 +6,28 @@ import (
 	"os"
 )
 
+/************************
+ *   Database Methods   *
+ ************************/
+
 // GetDB returns an interface to manage events
 func GetDB(StateFile string) (*Subscribe, error) {
 	s := &Subscribe{
 		stateFile:   StateFile,
 		EnableAPIs:  make([]string, 0),
-		Events:      make(Events),
+		Events:      &events{Map: make(map[string]Rules)},
 		Subscribers: make([]*Subscriber, 0),
 	}
-	return s, s.LoadStateFile()
+	return s, s.StateFileLoad()
 }
 
-// LoadStateFile data from a json file.
-func (s *Subscribe) LoadStateFile() error {
+// StateFileLoad data from a json file.
+func (s *Subscribe) StateFileLoad() error {
 	if s.stateFile == "" {
 		return nil
 	}
 	if buf, err := ioutil.ReadFile(s.stateFile); os.IsNotExist(err) {
-		return s.SaveStateFile()
+		return s.StateFileSave()
 	} else if err != nil {
 		return err
 	} else if err := json.Unmarshal(buf, s); err != nil {
@@ -32,21 +36,21 @@ func (s *Subscribe) LoadStateFile() error {
 	return nil
 }
 
-// GetStateJSON returns the state data in json format.
-func (s *Subscribe) GetStateJSON() (string, error) {
-	s.RLock()
-	defer s.RUnlock()
+// StateGetJSON returns the state data in json format.
+func (s *Subscribe) StateGetJSON() (string, error) {
+	s.Events.RLock()
+	defer s.Events.RUnlock()
 	b, err := json.Marshal(s)
 	return string(b), err
 }
 
-// SaveStateFile writes out the state file.
-func (s *Subscribe) SaveStateFile() error {
+// StateFileSave writes out the state file.
+func (s *Subscribe) StateFileSave() error {
 	if s.stateFile == "" {
 		return nil
 	}
-	s.RLock()
-	defer s.RUnlock()
+	s.Events.RLock()
+	defer s.Events.RUnlock()
 	if buf, err := json.Marshal(s); err != nil {
 		return err
 	} else if err := ioutil.WriteFile(s.stateFile, buf, 0640); err != nil {

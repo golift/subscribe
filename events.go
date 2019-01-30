@@ -1,60 +1,69 @@
 package subscribe
 
 /************************
- *   Events Methods   *
+ *    Events Methods    *
  ************************/
 
-// GetEvents returns all the configured events.
-func (s *Subscribe) GetEvents() Events {
-	s.RLock()
-	defer s.RUnlock()
-	return s.Events
+// Names returns all the configured event namee.
+func (e *events) Names() []string {
+	e.RLock()
+	defer e.RUnlock()
+	names := []string{}
+	for name := range e.Map {
+		names = append(names, name)
+	}
+	return names
 }
 
-// GetEvent returns the rules for an event.
+// Get returns the rules for an event.
 // Rules can be used by the user for whatever they want.
-func (s *Subscribe) GetEvent(name string) (map[string]string, error) {
-	s.RLock()
-	defer s.RUnlock()
-	if rules, ok := s.Events[name]; ok {
+func (e *events) Get(name string) (Rules, error) {
+	e.RLock()
+	defer e.RUnlock()
+	if rules, ok := e.Map[name]; ok {
 		return rules, nil
 	}
 	return nil, ErrorEventNotFound
 }
 
-// UpdateEvent adds or updates an event.
-func (s *Subscribe) UpdateEvent(name string, rules map[string]string) bool {
-	s.Lock()
-	defer s.Unlock()
+// Update adds or updates an event.
+func (e *events) Update(name string, rules Rules) bool {
+	e.Lock()
+	defer e.Unlock()
 	if rules == nil {
-		rules = make(map[string]string)
+		rules = make(Rules)
 	}
-	if _, ok := s.Events[name]; !ok {
-		s.Events[name] = rules
+	if _, ok := e.Map[name]; !ok {
+		e.Map[name] = rules
 		return true
 	}
 	for ruleName, rule := range rules {
 		if rule == "" {
-			delete(s.Events[name], ruleName)
+			delete(e.Map[name], ruleName)
 		} else {
-			s.Events[name][ruleName] = rule
+			e.Map[name][ruleName] = rule
 		}
 	}
 	return false
 }
 
-// RemoveEvent obliterates an event and all subsciptions for it.
-func (s *Subscribe) RemoveEvent(name string) (removed int) {
-	s.Lock()
-	delete(s.Events, name)
-	s.Unlock()
+// Remove deletes an event, and orphans any subscriptions.
+func (e *events) Remove(name string) {
+	e.Lock()
+	delete(e.Map, name)
+	e.Unlock()
+}
+
+// EventRemove obliterates an event and all subsciptions for it.
+func (s *Subscribe) EventRemove(name string) (removed int) {
+	s.Events.Remove(name)
 	for i := range s.Subscribers {
-		if _, ok := s.Subscribers[i].Events[name]; ok {
-			s.Subscribers[i].Lock()
-			delete(s.Subscribers[i].Events, name)
-			s.Subscribers[i].Unlock()
+		s.Subscribers[i].Events.Lock()
+		if _, ok := s.Subscribers[i].Events.Map[name]; ok {
+			delete(s.Subscribers[i].Events.Map, name)
 			removed++
 		}
+		s.Subscribers[i].Events.Unlock()
 	}
 	return
 }
