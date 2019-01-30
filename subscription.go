@@ -141,27 +141,25 @@ func (s *Subscriber) Subscriptions() []string {
 }
 
 // GetSubscribers returns a list of valid event subscribers.
+// This is the main method that should be triggered when an event occurs.
+// Call this method when your event fires, collect the subscribers and send
+// them notifications in your app. Subscribers can be people. Or functions.
 func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber) {
-	for i := range s.Subscribers {
-		if s.Subscribers[i].Ignored {
-			continue
-		}
-		for event, evnData := range s.Subscribers[i].Events.Map {
-			if event == eventName && evnData.Pause.Before(time.Now()) && checkAPI(s.Subscribers[i].API, s.EnableAPIs) {
-				subscribers = append(subscribers, s.Subscribers[i])
-			}
+	for _, sub := range s.Subscribers {
+		if !sub.Ignored && !sub.IsPaused(eventName) && s.checkAPI(sub.API) {
+			subscribers = append(subscribers, sub)
 		}
 	}
 	return
 }
 
 // checkAPI just looks for a string in a slice of strings with a twist.
-func checkAPI(s string, slice []string) bool {
-	if len(slice) < 1 {
+func (s *Subscribe) checkAPI(api string) bool {
+	if len(s.EnableAPIs) < 1 {
 		return true
 	}
-	for _, v := range slice {
-		if v == s || strings.HasPrefix(s, v) || v == "all" || v == "any" {
+	for _, a := range s.EnableAPIs {
+		if a == api || strings.HasPrefix(api, a) || a == "all" || a == "any" {
 			return true
 		}
 	}

@@ -11,12 +11,18 @@ import (
 func TestCheckAPI(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	a.True(checkAPI("test_string", []string{}), "an empty slice must always return true")
-	a.True(checkAPI("test_string://event", []string{"event", "test_string"}), "test_string is an allowed api prefix")
-	a.True(checkAPI("test_string", []string{"event", "any"}), "any as a slice value must return true")
-	a.True(checkAPI("test_string", []string{"event", "all"}), "all as a slice value must return true")
-	a.True(checkAPI("test_string", []string{"event", "test_string"}), "test_string is an allowed api")
-	a.False(checkAPI("test_string", []string{"event", "test_string2"}), "test_string is not an allowed api")
+	s := &Subscribe{Events: new(events)}
+	a.True(s.checkAPI("test_string"), "an empty slice must always return true")
+	s.EnableAPIs = []string{"event", "test_string"}
+	a.True(s.checkAPI("test_string://event"), "test_string is an allowed api prefix")
+	s.EnableAPIs = []string{"event", "any"}
+	a.True(s.checkAPI("test_string"), "any as a slice value must return true")
+	s.EnableAPIs = []string{"event", "all"}
+	a.True(s.checkAPI("test_string"), "all as a slice value must return true")
+	s.EnableAPIs = []string{"event", "test_string"}
+	a.True(s.checkAPI("test_string"), "test_string is an allowed api")
+	s.EnableAPIs = []string{"event", "test_string2"}
+	a.False(s.checkAPI("test_string"), "test_string is not an allowed api")
 }
 
 func TestUnSubscribe(t *testing.T) {
