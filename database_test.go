@@ -10,6 +10,7 @@ import (
 
 var testFile = "/tmp/this_is_a_testfile_for_subtscribe_test.go.json"
 var testFile2 = "/tmp/this_is_a_testfile_for_subtscribe_test2.go.json"
+var testFile4 = "/tmp/this_is_a_testfile_for_subtscribe_test4.go.json"
 
 func TestGetDB(t *testing.T) {
 	t.Parallel()
@@ -21,7 +22,7 @@ func TestGetDB(t *testing.T) {
 	a.Nil(err, "getting an empty state must produce no error")
 }
 
-func TestLoadStateFile(t *testing.T) {
+func TestStateFileLoad(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	// test with good data.
@@ -52,7 +53,7 @@ func TestLoadStateFile(t *testing.T) {
 	a.NotNil(err, "there must be an error when the state file is corrupt")
 }
 
-func TestSaveStateFile(t *testing.T) {
+func TestStateFileSave(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	a.Nil(os.RemoveAll(testFile2), "problem removing test file")
@@ -62,4 +63,18 @@ func TestSaveStateFile(t *testing.T) {
 	sub, err = GetDB("")
 	a.Nil(err, "there must be no error when the state file does not exist")
 	a.Nil(sub.StateFileSave(), "there must be no error when the state file does not exist")
+}
+
+func TestStateFileRelocate(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	a.Nil(os.RemoveAll(testFile4), "problem removing test file")
+	sub, err := GetDB("")
+	a.Nil(err, "there must be no error when the state file does not exist")
+	a.Nil(sub.StateFileSave(), "there must be no error when the state file does not exist")
+	err = sub.StateFileRelocate(testFile4)
+	a.Nil(err, "there must be no error creating the initial state file")
+	err = sub.StateFileRelocate("/tmp")
+	a.NotNil(err, "there must be an error trying to write a file as a /tmp folder")
+	a.EqualValues(testFile4, sub.stateFile, "the path was not changed back to the previous value")
 }

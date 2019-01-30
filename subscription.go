@@ -99,11 +99,11 @@ func (s *Subscriber) RulesReplace(eventName string, newRules []string) error {
 }
 
 // RulesAdd appends new rule(s) to a subscriber's event subscription.
-func (s *Subscriber) RulesAdd(eventName string, newRules []string) error {
+func (s *Subscriber) RulesAdd(eventName string, appendRules []string) error {
 	s.Events.Lock()
 	defer s.Events.Unlock()
 	if info, ok := s.Events.Map[eventName]; ok {
-		info.Rules = append(info.Rules, newRules...)
+		info.Rules = append(info.Rules, appendRules...)
 		s.Events.Map[eventName] = info
 		return nil
 	}

@@ -58,3 +58,12 @@ func (s *Subscribe) StateFileSave() error {
 	}
 	return nil
 }
+
+// StateFileRelocate writes the state file to a new location.
+func (s *Subscribe) StateFileRelocate(newPath string) (err error) {
+	s.stateFile, newPath = newPath, s.stateFile // swap places
+	if err = s.StateFileLoad(); err != nil {
+		s.stateFile = newPath // got an error, put it back.
+	}
+	return
+}
