@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golift/subscribe"
+	"code.golift.io/subscribe"
 )
 
 func main() {
