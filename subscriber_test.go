@@ -10,7 +10,7 @@ import (
 func TestCreateSub(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: new(events)}
+	sub := &Subscribe{Events: new(Events)}
 	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
 	a.EqualValues(1, len(sub.Subscribers), "there must be one subscriber")
 	a.True(sub.Subscribers[0].Admin, "admin must be true")
@@ -32,7 +32,7 @@ func TestCreateSub(t *testing.T) {
 func TestGetSubscriber(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: new(events)}
+	sub := &Subscribe{Events: new(Events)}
 	// Test missing subscriber
 	_, err := sub.GetSubscriber("im not here", "fake")
 	a.EqualValues(ErrorSubscriberNotFound, err, "must have a subscriber not found error")
@@ -45,7 +45,7 @@ func TestGetSubscriber(t *testing.T) {
 func TestAdmin(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: new(events)}
+	sub := &Subscribe{Events: new(Events)}
 	// Test missing subscriber
 	subs := sub.GetAdmins()
 	a.EqualValues(0, len(subs), "there must be zero admin since none were added")
@@ -60,7 +60,7 @@ func TestAdmin(t *testing.T) {
 func TestIgnore(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	sub := &Subscribe{Events: new(events)}
+	sub := &Subscribe{Events: new(Events)}
 	// Test missing subscriber
 	subs := sub.GetIgnored()
 	a.EqualValues(0, len(subs), "there must be zero ignored users since none were added")

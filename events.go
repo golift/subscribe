@@ -1,69 +1,270 @@
 package subscribe
 
+import (
+	"sort"
+	"time"
+)
+
 /************************
  *    Events Methods    *
  ************************/
 
-// Names returns all the configured event namee.
-func (e *events) Names() []string {
+// Names returns all the configured event names.
+func (e *Events) Names() []string {
 	e.RLock()
 	defer e.RUnlock()
 	names := []string{}
 	for name := range e.Map {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names
 }
 
-// Get returns the rules for an event.
-// Rules can be used by the user for whatever they want.
-func (e *events) Get(name string) (Rules, error) {
+// Len returns the number of configured events.
+func (e *Events) Len() int {
 	e.RLock()
 	defer e.RUnlock()
-	if rules, ok := e.Map[name]; ok {
-		return rules, nil
-	}
-	return nil, ErrorEventNotFound
+	return len(e.Map)
 }
 
-// Update adds or updates an event. Returns true for new events.
-// Returns false if an existing event's rules were updated.
-// Empty rules are removed. Existing rules are replaced.
-func (e *events) Update(name string, rules Rules) (new bool) {
+// Exists returns true if an event exists.
+func (e *Events) Exists(event string) bool {
+	e.RLock()
+	defer e.RUnlock()
+	if _, ok := e.Map[event]; ok {
+		return true
+	}
+	return false
+}
+
+// New adds an event.
+func (e *Events) New(event string, rules *Rules) error {
 	e.Lock()
 	defer e.Unlock()
+	if _, ok := e.Map[event]; ok {
+		return ErrorEventExists
+	}
 	if rules == nil {
-		rules = make(Rules)
+		rules = &Rules{}
 	}
-	if _, ok := e.Map[name]; !ok {
-		e.Map[name] = rules
-		new = true
+	if rules.D == nil {
+		rules.D = make(map[string]time.Duration)
 	}
-	for ruleName, rule := range rules {
-		if rule == "" {
-			delete(e.Map[name], ruleName)
-		} else {
-			e.Map[name][ruleName] = rule
-		}
+	if rules.I == nil {
+		rules.I = make(map[string]int)
 	}
-	return
+	if rules.S == nil {
+		rules.S = make(map[string]string)
+	}
+	if rules.T == nil {
+		rules.T = make(map[string]time.Time)
+	}
+	e.Map[event] = rules
+	return nil
 }
 
-// Remove deletes an event, and orphans any subscriptions.
-func (e *events) Remove(name string) {
+// UnPause resumes a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
+func (e *Events) UnPause(event string) error {
+	return e.Pause(event, 0)
+}
+
+// Pause (or unpause with 0 duration) a subscriber's event subscription.
+// Returns an error only if the event subscription is not found.
+func (e *Events) Pause(event string, duration time.Duration) error {
+	e.RLock()
+	defer e.RUnlock()
+	if _, ok := e.Map[event]; !ok {
+		return ErrorEventNotFound
+	}
+	e.Map[event].Pause = time.Now().Add(duration)
+	return nil
+}
+
+// IsPaused returns true if the event's notifications are pasued.
+// Returns true if the event subscription does not exist.
+func (e *Events) IsPaused(event string) bool {
+	e.RLock()
+	defer e.RUnlock()
+	info, ok := e.Map[event]
+	if !ok {
+		return true
+	}
+	return info.Pause.After(time.Now())
+}
+
+// PauseTime returns the pause time for an event.
+func (e *Events) PauseTime(event string) time.Time {
+	e.RLock()
+	defer e.RUnlock()
+	info, ok := e.Map[event]
+	if !ok {
+		return time.Time{}
+	}
+	return info.Pause
+}
+
+// Remove deletes an event.
+func (e *Events) Remove(event string) {
 	e.Lock()
 	defer e.Unlock()
-	delete(e.Map, name)
+	delete(e.Map, event)
 }
 
-// EventRemove obliterates an event and all subsciptions for it.
-// Returns the number of subscriptions removed.
-func (s *Subscribe) EventRemove(eventName string) (removed int) {
-	s.Events.Remove(eventName)
-	for _, sub := range s.Subscribers {
-		if sub.UnSubscribe(eventName) == nil {
-			removed++
+// RuleGetD returns a Duration rule.
+func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
+	e.RLock()
+	defer e.RUnlock()
+	r, ok := e.Map[event]
+	if !ok || r == nil {
+		return 0, false
+	}
+	for n, v := range r.D {
+		if n == rule {
+			return v, true
 		}
 	}
-	return
+	return 0, false
+}
+
+// RuleGetI returns an integer rule.
+func (e *Events) RuleGetI(event, rule string) (int, bool) {
+	e.RLock()
+	defer e.RUnlock()
+	r, ok := e.Map[event]
+	if !ok || r == nil {
+		return 0, false
+	}
+	for n, v := range r.I {
+		if n == rule {
+			return v, true
+		}
+	}
+	return 0, false
+}
+
+// RuleGetS returns a string rule.
+func (e *Events) RuleGetS(event, rule string) (string, bool) {
+	e.RLock()
+	defer e.RUnlock()
+	r, ok := e.Map[event]
+	if !ok || r == nil {
+		return "", false
+	}
+	for n, v := range r.S {
+		if n == rule {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+// RuleGetT returns a Time rule.
+func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
+	e.RLock()
+	defer e.RUnlock()
+	r, ok := e.Map[event]
+	if !ok || r == nil {
+		return time.Now(), false
+	}
+	for n, v := range r.T {
+		if n == rule {
+			return v, true
+		}
+	}
+	return time.Now(), false
+}
+
+// RuleSetD updates or sets a Duration rule.
+func (e *Events) RuleSetD(event, rule string, val time.Duration) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	e.Map[event].D[rule] = val
+}
+
+// RuleSetI updates or sets an integer rule.
+func (e *Events) RuleSetI(event, rule string, val int) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	e.Map[event].I[rule] = val
+}
+
+// RuleSetS updates or sets a string rule.
+func (e *Events) RuleSetS(event, rule string, val string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	e.Map[event].S[rule] = val
+}
+
+// RuleSetT updates or sets a Time rule.
+func (e *Events) RuleSetT(event, rule string, val time.Time) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	e.Map[event].T[rule] = val
+}
+
+// RuleDelD deletes a Duration rule.
+func (e *Events) RuleDelD(event, rule string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	delete(e.Map[event].D, rule)
+}
+
+// RuleDelI deletes an integer rule.
+func (e *Events) RuleDelI(event, rule string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	delete(e.Map[event].I, rule)
+}
+
+// RuleDelS deletes a string rule.
+func (e *Events) RuleDelS(event, rule string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	delete(e.Map[event].S, rule)
+}
+
+// RuleDelT deletes a Time rule.
+func (e *Events) RuleDelT(event, rule string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	delete(e.Map[event].T, rule)
+}
+
+// RuleDelAll deletes rules of any type with a specific name.
+func (e *Events) RuleDelAll(event, rule string) {
+	e.Lock()
+	defer e.Unlock()
+	if _, ok := e.Map[event]; !ok {
+		return
+	}
+	delete(e.Map[event].D, rule)
+	delete(e.Map[event].I, rule)
+	delete(e.Map[event].S, rule)
+	delete(e.Map[event].T, rule)
 }

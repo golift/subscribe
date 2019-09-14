@@ -15,7 +15,7 @@ func GetDB(StateFile string) (*Subscribe, error) {
 	s := &Subscribe{
 		stateFile:   StateFile,
 		EnableAPIs:  make([]string, 0),
-		Events:      &events{Map: make(map[string]Rules)},
+		Events:      &Events{Map: make(map[string]*Rules)},
 		Subscribers: make([]*Subscriber, 0),
 	}
 	return s, s.StateFileLoad()

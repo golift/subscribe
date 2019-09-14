@@ -14,14 +14,13 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 			return s.Subscribers[i]
 		}
 	}
-
 	s.Subscribers = append(s.Subscribers, &Subscriber{
 		Contact: contact,
 		API:     api,
 		Admin:   admin,
 		Ignored: ignore,
-		Events: &subEvents{
-			Map: make(map[string]subEventInfo),
+		Events: &Events{
+			Map: make(map[string]*Rules),
 		},
 	})
 	return s.Subscribers[len(s.Subscribers)-1]
