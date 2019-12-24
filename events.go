@@ -183,6 +183,9 @@ func (e *Events) RuleSetD(event, rule string, val time.Duration) {
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+	if e.Map[event].D == nil {
+		e.Map[event].D = make(map[string]time.Duration)
+	}
 	e.Map[event].D[rule] = val
 }
 
@@ -192,6 +195,9 @@ func (e *Events) RuleSetI(event, rule string, val int) {
 	defer e.Unlock()
 	if _, ok := e.Map[event]; !ok {
 		return
+	}
+	if e.Map[event].I == nil {
+		e.Map[event].I = make(map[string]int)
 	}
 	e.Map[event].I[rule] = val
 }
@@ -203,6 +209,9 @@ func (e *Events) RuleSetS(event, rule string, val string) {
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+	if e.Map[event].S == nil {
+		e.Map[event].S = make(map[string]string)
+	}
 	e.Map[event].S[rule] = val
 }
 
@@ -213,6 +222,9 @@ func (e *Events) RuleSetT(event, rule string, val time.Time) {
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+	if e.Map[event].T == nil {
+		e.Map[event].T = make(map[string]time.Time)
+	}
 	e.Map[event].T[rule] = val
 }
 
@@ -220,7 +232,7 @@ func (e *Events) RuleSetT(event, rule string, val time.Time) {
 func (e *Events) RuleDelD(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
-	if _, ok := e.Map[event]; !ok {
+	if _, ok := e.Map[event]; !ok || e.Map[event].D == nil {
 		return
 	}
 	delete(e.Map[event].D, rule)
@@ -230,7 +242,7 @@ func (e *Events) RuleDelD(event, rule string) {
 func (e *Events) RuleDelI(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
-	if _, ok := e.Map[event]; !ok {
+	if _, ok := e.Map[event]; !ok || e.Map[event].I == nil {
 		return
 	}
 	delete(e.Map[event].I, rule)
@@ -240,7 +252,7 @@ func (e *Events) RuleDelI(event, rule string) {
 func (e *Events) RuleDelS(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
-	if _, ok := e.Map[event]; !ok {
+	if _, ok := e.Map[event]; !ok || e.Map[event].S == nil {
 		return
 	}
 	delete(e.Map[event].S, rule)
@@ -250,7 +262,7 @@ func (e *Events) RuleDelS(event, rule string) {
 func (e *Events) RuleDelT(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
-	if _, ok := e.Map[event]; !ok {
+	if _, ok := e.Map[event]; !ok || e.Map[event].T == nil {
 		return
 	}
 	delete(e.Map[event].T, rule)
