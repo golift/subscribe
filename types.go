@@ -1,18 +1,18 @@
 package subscribe
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
 
 var (
 	// ErrorSubscriberNotFound is returned any time a requested subscriber does not exist.
-	ErrorSubscriberNotFound = errors.New("subscriber not found")
+	ErrorSubscriberNotFound = fmt.Errorf("subscriber not found")
 	// ErrorEventNotFound is returned when a requested event has not been created.
-	ErrorEventNotFound = errors.New("event not found")
+	ErrorEventNotFound = fmt.Errorf("event not found")
 	// ErrorEventExists is returned when a new event with an existing name is created.
-	ErrorEventExists = errors.New("event already exists")
+	ErrorEventExists = fmt.Errorf("event already exists")
 )
 
 // Rules contains the pause time and rules for a subscriber's event subscription.

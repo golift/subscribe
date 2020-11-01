@@ -13,11 +13,15 @@ import (
 func (e *Events) Names() []string {
 	e.RLock()
 	defer e.RUnlock()
+
 	names := []string{}
+
 	for name := range e.Map {
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
+
 	return names
 }
 
@@ -25,6 +29,7 @@ func (e *Events) Names() []string {
 func (e *Events) Len() int {
 	e.RLock()
 	defer e.RUnlock()
+
 	return len(e.Map)
 }
 
@@ -32,9 +37,11 @@ func (e *Events) Len() int {
 func (e *Events) Exists(event string) bool {
 	e.RLock()
 	defer e.RUnlock()
+
 	if _, ok := e.Map[event]; ok {
 		return true
 	}
+
 	return false
 }
 
@@ -42,25 +49,33 @@ func (e *Events) Exists(event string) bool {
 func (e *Events) New(event string, rules *Rules) error {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; ok {
 		return ErrorEventExists
 	}
+
 	if rules == nil {
 		rules = &Rules{}
 	}
+
 	if rules.D == nil {
 		rules.D = make(map[string]time.Duration)
 	}
+
 	if rules.I == nil {
 		rules.I = make(map[string]int)
 	}
+
 	if rules.S == nil {
 		rules.S = make(map[string]string)
 	}
+
 	if rules.T == nil {
 		rules.T = make(map[string]time.Time)
 	}
+
 	e.Map[event] = rules
+
 	return nil
 }
 
@@ -75,10 +90,13 @@ func (e *Events) UnPause(event string) error {
 func (e *Events) Pause(event string, duration time.Duration) error {
 	e.RLock()
 	defer e.RUnlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return ErrorEventNotFound
 	}
+
 	e.Map[event].Pause = time.Now().Add(duration)
+
 	return nil
 }
 
@@ -87,10 +105,12 @@ func (e *Events) Pause(event string, duration time.Duration) error {
 func (e *Events) IsPaused(event string) bool {
 	e.RLock()
 	defer e.RUnlock()
+
 	info, ok := e.Map[event]
 	if !ok {
 		return true
 	}
+
 	return info.Pause.After(time.Now())
 }
 
@@ -98,10 +118,12 @@ func (e *Events) IsPaused(event string) bool {
 func (e *Events) PauseTime(event string) time.Time {
 	e.RLock()
 	defer e.RUnlock()
+
 	info, ok := e.Map[event]
 	if !ok {
 		return time.Time{}
 	}
+
 	return info.Pause
 }
 
@@ -109,6 +131,7 @@ func (e *Events) PauseTime(event string) time.Time {
 func (e *Events) Remove(event string) {
 	e.Lock()
 	defer e.Unlock()
+
 	delete(e.Map, event)
 }
 
@@ -116,15 +139,18 @@ func (e *Events) Remove(event string) {
 func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
 	e.RLock()
 	defer e.RUnlock()
+
 	r, ok := e.Map[event]
 	if !ok || r == nil {
 		return 0, false
 	}
+
 	for n, v := range r.D {
 		if n == rule {
 			return v, true
 		}
 	}
+
 	return 0, false
 }
 
@@ -132,15 +158,18 @@ func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
 func (e *Events) RuleGetI(event, rule string) (int, bool) {
 	e.RLock()
 	defer e.RUnlock()
+
 	r, ok := e.Map[event]
 	if !ok || r == nil {
 		return 0, false
 	}
+
 	for n, v := range r.I {
 		if n == rule {
 			return v, true
 		}
 	}
+
 	return 0, false
 }
 
@@ -148,15 +177,18 @@ func (e *Events) RuleGetI(event, rule string) (int, bool) {
 func (e *Events) RuleGetS(event, rule string) (string, bool) {
 	e.RLock()
 	defer e.RUnlock()
+
 	r, ok := e.Map[event]
 	if !ok || r == nil {
 		return "", false
 	}
+
 	for n, v := range r.S {
 		if n == rule {
 			return v, true
 		}
 	}
+
 	return "", false
 }
 
@@ -164,15 +196,18 @@ func (e *Events) RuleGetS(event, rule string) (string, bool) {
 func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
 	e.RLock()
 	defer e.RUnlock()
+
 	r, ok := e.Map[event]
 	if !ok || r == nil {
 		return time.Now(), false
 	}
+
 	for n, v := range r.T {
 		if n == rule {
 			return v, true
 		}
 	}
+
 	return time.Now(), false
 }
 
@@ -180,12 +215,15 @@ func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
 func (e *Events) RuleSetD(event, rule string, val time.Duration) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+
 	if e.Map[event].D == nil {
 		e.Map[event].D = make(map[string]time.Duration)
 	}
+
 	e.Map[event].D[rule] = val
 }
 
@@ -193,12 +231,15 @@ func (e *Events) RuleSetD(event, rule string, val time.Duration) {
 func (e *Events) RuleSetI(event, rule string, val int) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+
 	if e.Map[event].I == nil {
 		e.Map[event].I = make(map[string]int)
 	}
+
 	e.Map[event].I[rule] = val
 }
 
@@ -206,12 +247,15 @@ func (e *Events) RuleSetI(event, rule string, val int) {
 func (e *Events) RuleSetS(event, rule string, val string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+
 	if e.Map[event].S == nil {
 		e.Map[event].S = make(map[string]string)
 	}
+
 	e.Map[event].S[rule] = val
 }
 
@@ -219,12 +263,15 @@ func (e *Events) RuleSetS(event, rule string, val string) {
 func (e *Events) RuleSetT(event, rule string, val time.Time) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+
 	if e.Map[event].T == nil {
 		e.Map[event].T = make(map[string]time.Time)
 	}
+
 	e.Map[event].T[rule] = val
 }
 
@@ -232,9 +279,11 @@ func (e *Events) RuleSetT(event, rule string, val time.Time) {
 func (e *Events) RuleDelD(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok || e.Map[event].D == nil {
 		return
 	}
+
 	delete(e.Map[event].D, rule)
 }
 
@@ -242,9 +291,11 @@ func (e *Events) RuleDelD(event, rule string) {
 func (e *Events) RuleDelI(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok || e.Map[event].I == nil {
 		return
 	}
+
 	delete(e.Map[event].I, rule)
 }
 
@@ -252,9 +303,11 @@ func (e *Events) RuleDelI(event, rule string) {
 func (e *Events) RuleDelS(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok || e.Map[event].S == nil {
 		return
 	}
+
 	delete(e.Map[event].S, rule)
 }
 
@@ -262,9 +315,11 @@ func (e *Events) RuleDelS(event, rule string) {
 func (e *Events) RuleDelT(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok || e.Map[event].T == nil {
 		return
 	}
+
 	delete(e.Map[event].T, rule)
 }
 
@@ -272,9 +327,11 @@ func (e *Events) RuleDelT(event, rule string) {
 func (e *Events) RuleDelAll(event, rule string) {
 	e.Lock()
 	defer e.Unlock()
+
 	if _, ok := e.Map[event]; !ok {
 		return
 	}
+
 	delete(e.Map[event].D, rule)
 	delete(e.Map[event].I, rule)
 	delete(e.Map[event].S, rule)

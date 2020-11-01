@@ -27,18 +27,22 @@ func main() {
 	// Instantiate an in-memory database. Passing a file-path here loads
 	// a DB from disk, or saves a new database to the file-path provided.
 	db, _ := subscribe.GetDB("")
+
 	// Create two new subscribers. Initial state has no subscriptions.
 	newSub := db.CreateSub("you@email.com.tw", "smtp", false, false)
 	newSub2 := db.CreateSub("+18089117234", "sms", false, false)
+
 	// Subscribe the users to an event. Errors only if subscription already exists.
 	_ = newSub.Subscribe("party invites")
 	_ = newSub2.Subscribe("party invites")
 
 	// Limit subscriber search to only email recipients. Initial state returns any API.
 	db.EnableAPIs = []string{"smtp"}
+
 	// Now that your party invites event has subscribers, you can find them when a party invite arrives.
 	subs := db.GetSubscribers("party invites")
 	fmt.Printf("Sending email to %d subscriber(s):\n", len(subs))
+
 	for _, sub := range subs {
 		fmt.Println(sub.Contact)
 		// send email.
@@ -49,6 +53,7 @@ func main() {
 	// Now that your party invites event has subscribers, you can find them when a party invite arrives.
 	subs = db.GetSubscribers("party invites")
 	fmt.Printf("Sending Text Msg to %d subscriber(s):\n", len(subs))
+
 	for _, sub := range subs {
 		fmt.Println(sub.Contact)
 		// send sms.
@@ -72,7 +77,9 @@ func main() {
 	}
 }
 ```
+
 Output:
+
 ```
 Sending email to 1 subscriber(s):
 you@email.com.tw

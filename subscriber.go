@@ -14,6 +14,7 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 			return s.Subscribers[i]
 		}
 	}
+
 	s.Subscribers = append(s.Subscribers, &Subscriber{
 		Contact: contact,
 		API:     api,
@@ -23,6 +24,7 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 			Map: make(map[string]*Rules),
 		},
 	})
+
 	return s.Subscribers[len(s.Subscribers)-1]
 }
 
@@ -35,6 +37,7 @@ func (s *Subscribe) GetSubscriber(contact, api string) (*Subscriber, error) {
 			return sub, nil
 		}
 	}
+
 	return nil, ErrorSubscriberNotFound
 }
 
@@ -45,6 +48,7 @@ func (s *Subscribe) GetAdmins() (subs []*Subscriber) {
 			subs = append(subs, sub)
 		}
 	}
+
 	return
 }
 
@@ -55,5 +59,6 @@ func (s *Subscribe) GetIgnored() (subs []*Subscriber) {
 			subs = append(subs, sub)
 		}
 	}
+
 	return
 }

@@ -25,6 +25,7 @@ func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber)
 			subscribers = append(subscribers, sub)
 		}
 	}
+
 	return
 }
 
@@ -33,17 +34,20 @@ func (s *Subscribe) checkAPI(api string) bool {
 	if len(s.EnableAPIs) < 1 {
 		return true
 	}
+
 	for _, a := range s.EnableAPIs {
 		if a == api || strings.HasPrefix(api, a) || a == "all" || a == "any" {
 			return true
 		}
 	}
+
 	return false
 }
 
 // EventRemove obliterates an event and all subsciptions for it.
 func (s *Subscribe) EventRemove(event string) {
 	s.Events.Remove(event)
+
 	for _, sub := range s.Subscribers {
 		sub.Events.Remove(event)
 	}
