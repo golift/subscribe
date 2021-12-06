@@ -2,6 +2,7 @@ package subscribe
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -10,7 +11,7 @@ import (
  *   Database Methods   *
  ************************/
 
-// GetDB returns an interface to manage events
+// GetDB returns an interface to manage events.
 func GetDB(stateFile string) (*Subscribe, error) {
 	s := &Subscribe{
 		stateFile:   stateFile,
@@ -59,9 +60,9 @@ func (s *Subscribe) StateFileSave() error {
 	defer s.Events.RUnlock()
 
 	if buf, err := json.Marshal(s); err != nil {
-		return err
-	} else if err := ioutil.WriteFile(s.stateFile, buf, 0600); err != nil {
-		return err
+		return fmt.Errorf("marshaling json: %w", err)
+	} else if err = ioutil.WriteFile(s.stateFile, buf, 0o600); err != nil {
+		return fmt.Errorf("writing file: %w", err)
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package subscribe
 
 import (
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,24 @@ func (e *Events) Len() int {
 	return len(e.Map)
 }
 
+// Name finds an event case insentively.
+func (e *Events) Name(event string) string {
+	e.RLock()
+	defer e.RUnlock()
+
+	if _, ok := e.Map[event]; ok {
+		return event
+	}
+
+	for k := range e.Map {
+		if strings.EqualFold(k, event) {
+			return k
+		}
+	}
+
+	return ""
+}
+
 // Exists returns true if an event exists.
 func (e *Events) Exists(event string) bool {
 	e.RLock()
@@ -51,7 +70,7 @@ func (e *Events) New(event string, rules *Rules) error {
 	defer e.Unlock()
 
 	if _, ok := e.Map[event]; ok {
-		return ErrorEventExists
+		return ErrEventExists
 	}
 
 	if rules == nil {
@@ -92,7 +111,7 @@ func (e *Events) Pause(event string, duration time.Duration) error {
 	defer e.RUnlock()
 
 	if _, ok := e.Map[event]; !ok {
-		return ErrorEventNotFound
+		return ErrEventNotFound
 	}
 
 	e.Map[event].Pause = time.Now().Add(duration)

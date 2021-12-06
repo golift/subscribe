@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	// ErrorSubscriberNotFound is returned any time a requested subscriber does not exist.
-	ErrorSubscriberNotFound = fmt.Errorf("subscriber not found")
-	// ErrorEventNotFound is returned when a requested event has not been created.
-	ErrorEventNotFound = fmt.Errorf("event not found")
-	// ErrorEventExists is returned when a new event with an existing name is created.
-	ErrorEventExists = fmt.Errorf("event already exists")
+	// ErrSubscriberNotFound is returned any time a requested subscriber does not exist.
+	ErrSubscriberNotFound = fmt.Errorf("subscriber not found")
+	// ErrEventNotFound is returned when a requested event has not been created.
+	ErrEventNotFound = fmt.Errorf("event not found")
+	// ErrEventExists is returned when a new event with an existing name is created.
+	ErrEventExists = fmt.Errorf("event already exists")
 )
 
 // Rules contains the pause time and rules for a subscriber's event subscription.
@@ -27,9 +27,14 @@ type Rules struct {
 
 // Subscriber describes the contact info and subscriptions for a person.
 type Subscriber struct {
+	// ID is optional. If it provided, this is used as the _match_.
+	ID int64 `json:"id"`
+	// Meta is optional. This library does not use this value.
+	Meta map[string]interface{} `json:"meta"`
 	// API is the type of API the subscriber is subscribed with. Used to filter results.
 	API string `json:"api"`
 	// Contact is the contact info used in the API to send the subscriber a notification.
+	// If ID is not present this value is used as the _match_.
 	Contact string `json:"contact"`
 	// Events is a list of events the subscriber is subscribed to, including a cooldown/pause time.
 	Events *Events `json:"events"`

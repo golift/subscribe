@@ -34,9 +34,9 @@ func TestStateFileLoad(t *testing.T) {
 	a := assert.New(t)
 
 	// test with good data.
-	testJSON := `{"enabled_apis":[],"events":{"events_map":{}},"subscribers":[{"api":` +
+	testJSON := `{"enabled_apis":[],"events":{"events_map":{}},"subscribers":[{"id":0,"meta":null,"api":` +
 		`"http","contact":"testUser","events":{"events_map":{}},"is_admin":false,"ignored":false}]}`
-	a.Nil(ioutil.WriteFile(testFile, []byte(testJSON), 0600), "problem writing test file")
+	a.Nil(ioutil.WriteFile(testFile, []byte(testJSON), 0o600), "problem writing test file")
 
 	sub, err := GetDB(testFile)
 	a.Nil(err, "there must be no error loading the state file")
@@ -66,7 +66,7 @@ func TestStateFileLoad(t *testing.T) {
 	a.NotNil(err, "there must be an error when the state cannot be read")
 
 	// Test bad data.
-	err = ioutil.WriteFile(testFile, []byte("this aint good json}}"), 0600)
+	err = ioutil.WriteFile(testFile, []byte("this aint good json}}"), 0o600)
 	a.Nil(err, "problem writing test file")
 
 	_, err = GetDB(testFile)

@@ -45,7 +45,7 @@ func TestUnSubscribe(t *testing.T) {
 	a.Nil(s.Subscribe("event_name3"))
 
 	// Make sure we can't add the same event twice.
-	a.EqualValues(ErrorEventExists, s.Subscribe("event_name3"), "duplicate event allowed")
+	a.EqualValues(ErrEventExists, s.Subscribe("event_name3"), "duplicate event allowed")
 
 	// Remove a subscription.
 	s.Events.Remove("event_name3")
@@ -67,7 +67,7 @@ func TestPause(t *testing.T) {
 	a.Nil(s.Subscribe("eventName"))
 
 	// Make sure pausing a missing event returns the proper error.
-	a.EqualValues(ErrorEventNotFound, s.Events.Pause("fake event", 0))
+	a.EqualValues(ErrEventNotFound, s.Events.Pause("fake event", 0))
 
 	// Testing a real unpause.
 	a.Nil(s.Events.Pause("eventName", 0))

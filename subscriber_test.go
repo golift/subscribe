@@ -41,7 +41,7 @@ func TestGetSubscriber(t *testing.T) {
 
 	// Test missing subscriber
 	_, err := sub.GetSubscriber("im not here", "fake")
-	a.EqualValues(ErrorSubscriberNotFound, err, "must have a subscriber not found error")
+	a.EqualValues(ErrSubscriberNotFound, err, "must have a subscriber not found error")
 
 	// Test getting real subscriber
 	sub.CreateSub("myContacNameTest", "apiValueHere", true, false)
