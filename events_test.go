@@ -1,12 +1,14 @@
 package subscribe
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const testFile3 = "/tmp/this_is_a_testfile_for_subtscribe_test3.go.json"
+var testFile3 = filepath.Join(os.TempDir(), "this_is_a_testfile_for_subtscribe_test3.go.json")
 
 func TestNew(t *testing.T) {
 	t.Parallel()

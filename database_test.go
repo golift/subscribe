@@ -99,7 +99,7 @@ func TestStateFileRelocate(t *testing.T) {
 	assert.EqualValues(testFile4, sub.stateFile, "the path was not to the new value")
 	assert.Nil(err, "there must be no error creating the initial state file")
 
-	err = sub.StateFileRelocate("/tmp")
-	assert.NotNil(err, "there must be an error trying to write a file as a /tmp folder")
+	err = sub.StateFileRelocate(os.TempDir())
+	assert.NotNil(err, "there must be an error trying to write a file as a tmp folder")
 	assert.EqualValues(testFile4, sub.stateFile, "the path was not changed back to the previous value")
 }
