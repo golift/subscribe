@@ -39,7 +39,7 @@ type Subscriber struct {
 	// Events is a list of events the subscriber is subscribed to, including a cooldown/pause time.
 	Events *Events `json:"events"`
 	// This is just extra data that can be used to make the user special.
-	Admin bool `json:"is_admin"`
+	Admin bool `json:"isAdmin"`
 	// Ignored will exclude a user from GetSubscribers().
 	Ignored bool `json:"ignored"`
 }
@@ -49,7 +49,7 @@ type Subscriber struct {
 // notifications in a consuming application.
 type Events struct {
 	// Map is the events/rules map. Use the provided methods to interact with it.
-	Map map[string]*Rules `json:"events_map"`
+	Map map[string]*Rules `json:"eventsMap"`
 	// sync.RWMutex locks and unlocks the Events map
 	sync.RWMutex
 }
@@ -58,7 +58,7 @@ type Events struct {
 type Subscribe struct {
 	// EnableAPIs sets the allowed APIs. Only subscriptions that have an API
 	// with a prefix in this list will return from the GetSubscribers() method.
-	EnableAPIs []string `json:"enabled_apis"` // imessage, skype, pushover, email, slack, growl, all, any
+	EnableAPIs []string `json:"enabledApis"` // imessage, skype, pushover, email, slack, growl, all, any
 	// stateFile is the db location, like: /usr/local/var/lib/motifini/subscribers.json
 	stateFile string
 	// Events stores a list of arbitrary events. Use the included methods to interact with it.

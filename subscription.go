@@ -19,14 +19,16 @@ func (s *Subscriber) Subscribe(event string) error {
 // This is the main method that should be triggered when an event occurs.
 // Call this method when your event fires, collect the subscribers and send
 // them notifications in your app. Subscribers can be people. Or functions.
-func (s *Subscribe) GetSubscribers(eventName string) (subscribers []*Subscriber) {
+func (s *Subscribe) GetSubscribers(eventName string) []*Subscriber {
+	var subscribers []*Subscriber
+
 	for _, sub := range s.Subscribers {
 		if !sub.Ignored && s.checkAPI(sub.API) && !sub.Events.IsPaused(eventName) {
 			subscribers = append(subscribers, sub)
 		}
 	}
 
-	return
+	return subscribers
 }
 
 // checkAPI just looks for a string in a slice of strings with a twist.
