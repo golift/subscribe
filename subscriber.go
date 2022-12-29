@@ -28,22 +28,22 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 	return s.Subscribers[len(s.Subscribers)-1]
 }
 
-func (s *Subscribe) CreateSubWithID(id int64, contact, api string, admin, ignore bool) *Subscriber {
-	if id == 0 {
+func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ignore bool) *Subscriber {
+	if subID == 0 {
 		return nil
 	}
 
-	for i := range s.Subscribers {
-		if id == s.Subscribers[i].ID && api == s.Subscribers[i].API {
-			s.Subscribers[i].Admin = admin
-			s.Subscribers[i].Ignored = ignore
+	for idx := range s.Subscribers {
+		if subID == s.Subscribers[idx].ID && api == s.Subscribers[idx].API {
+			s.Subscribers[idx].Admin = admin
+			s.Subscribers[idx].Ignored = ignore
 			// Already exists, return it.
-			return s.Subscribers[i]
+			return s.Subscribers[idx]
 		}
 	}
 
 	sub := &Subscriber{
-		ID:      id,
+		ID:      subID,
 		Contact: contact,
 		API:     api,
 		Admin:   admin,
@@ -71,13 +71,13 @@ func (s *Subscribe) GetSubscriber(contact, api string) (*Subscriber, error) {
 }
 
 // GetSubscriberByID gets a subscriber based on their unique ID.
-func (s *Subscribe) GetSubscriberByID(id int64, api string) (*Subscriber, error) {
-	if id == 0 {
+func (s *Subscribe) GetSubscriberByID(subID int64, api string) (*Subscriber, error) {
+	if subID == 0 {
 		return nil, ErrSubscriberNotFound
 	}
 
 	for _, sub := range s.Subscribers {
-		if sub.ID == id && sub.API == api {
+		if sub.ID == subID && sub.API == api {
 			return sub, nil
 		}
 	}
@@ -86,23 +86,27 @@ func (s *Subscribe) GetSubscriberByID(id int64, api string) (*Subscriber, error)
 }
 
 // GetAdmins returns a list of subscribed admins.
-func (s *Subscribe) GetAdmins() (subs []*Subscriber) {
+func (s *Subscribe) GetAdmins() []*Subscriber {
+	var subs []*Subscriber
+
 	for _, sub := range s.Subscribers {
 		if sub.Admin {
 			subs = append(subs, sub)
 		}
 	}
 
-	return
+	return subs
 }
 
 // GetIgnored returns a list of ignored subscribers.
-func (s *Subscribe) GetIgnored() (subs []*Subscriber) {
+func (s *Subscribe) GetIgnored() []*Subscriber {
+	var subs []*Subscriber
+
 	for _, sub := range s.Subscribers {
 		if sub.Ignored {
 			subs = append(subs, sub)
 		}
 	}
 
-	return
+	return subs
 }
