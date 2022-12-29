@@ -2,6 +2,7 @@ issues:
   exclude-rules:
     - linters:
         - testpackage
+        - gochecknoglobals
       path: '(.+)_test\.go'
 linters:
   enable-all: true

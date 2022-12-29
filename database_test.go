@@ -2,15 +2,16 @@ package subscribe
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testFile  = "/tmp/this_is_a_testfile_for_subtscribe_test.go.json"
-	testFile2 = "/tmp/this_is_a_testfile_for_subtscribe_test2.go.json"
-	testFile4 = "/tmp/this_is_a_testfile_for_subtscribe_test4.go.json"
+var (
+	testFile  = filepath.Join(os.TempDir(), "this_is_a_testfile_for_subtscribe_test.go.json")
+	testFile2 = filepath.Join(os.TempDir(), "this_is_a_testfile_for_subtscribe_test2.go.json")
+	testFile4 = filepath.Join(os.TempDir(), "this_is_a_testfile_for_subtscribe_test4.go.json")
 )
 
 func TestGetDB(t *testing.T) {
