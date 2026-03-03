@@ -20,10 +20,12 @@ func (s *Subscriber) Subscribe(event string) error {
 // Call this method when your event fires, collect the subscribers and send
 // them notifications in your app. Subscribers can be people. Or functions.
 func (s *Subscribe) GetSubscribers(eventName string) []*Subscriber {
-	var subscribers []*Subscriber
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
+	subscribers := make([]*Subscriber, 0, len(s.Subscribers))
 	for _, sub := range s.Subscribers {
-		if !sub.Ignored && s.checkAPI(sub.API) && !sub.Events.IsPaused(eventName) {
+		if !sub.Ignored && s.checkAPILocked(sub.API) && !sub.Events.IsPaused(eventName) {
 			subscribers = append(subscribers, sub)
 		}
 	}
@@ -33,6 +35,13 @@ func (s *Subscribe) GetSubscribers(eventName string) []*Subscriber {
 
 // checkAPI just looks for a string in a slice of strings with a twist.
 func (s *Subscribe) checkAPI(api string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.checkAPILocked(api)
+}
+
+func (s *Subscribe) checkAPILocked(api string) bool {
 	if len(s.EnableAPIs) < 1 {
 		return true
 	}
@@ -46,8 +55,11 @@ func (s *Subscribe) checkAPI(api string) bool {
 	return false
 }
 
-// EventRemove obliterates an event and all subsciptions for it.
+// EventRemove obliterates an event and all subscriptions for it.
 func (s *Subscribe) EventRemove(event string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	s.Events.Remove(event)
 
 	for _, sub := range s.Subscribers {
