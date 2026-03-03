@@ -59,6 +59,8 @@ type Subscribe struct {
 	// EnableAPIs sets the allowed APIs. Only subscriptions that have an API
 	// with a prefix in this list will return from the GetSubscribers() method.
 	EnableAPIs []string `json:"enabledApis"` // imessage, skype, pushover, email, slack, growl, all, any
+	// mu protects mutable Subscribe fields.
+	mu sync.RWMutex
 	// stateFile is the db location, like: /usr/local/var/lib/motifini/subscribers.json
 	stateFile string
 	// Events stores a list of arbitrary events. Use the included methods to interact with it.

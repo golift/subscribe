@@ -1,6 +1,7 @@
 package subscribe
 
 import (
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ func (e *Events) Len() int {
 	return len(e.Map)
 }
 
-// Name finds an event case insentively.
+// Name finds an event case insensitively.
 func (e *Events) Name(event string) string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -73,27 +74,7 @@ func (e *Events) New(event string, rules *Rules) error {
 		return ErrEventExists
 	}
 
-	if rules == nil {
-		rules = &Rules{}
-	}
-
-	if rules.D == nil {
-		rules.D = make(map[string]time.Duration)
-	}
-
-	if rules.I == nil {
-		rules.I = make(map[string]int)
-	}
-
-	if rules.S == nil {
-		rules.S = make(map[string]string)
-	}
-
-	if rules.T == nil {
-		rules.T = make(map[string]time.Time)
-	}
-
-	e.Map[event] = rules
+	e.Map[event] = cloneRules(rules)
 
 	return nil
 }
@@ -107,8 +88,8 @@ func (e *Events) UnPause(event string) error {
 // Pause (or unpause with 0 duration) a subscriber's event subscription.
 // Returns an error only if the event subscription is not found.
 func (e *Events) Pause(event string, duration time.Duration) error {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return ErrEventNotFound
@@ -119,7 +100,7 @@ func (e *Events) Pause(event string, duration time.Duration) error {
 	return nil
 }
 
-// IsPaused returns true if the event's notifications are pasued.
+// IsPaused returns true if the event's notifications are paused.
 // Returns true if the event subscription does not exist.
 func (e *Events) IsPaused(event string) bool {
 	e.mu.RLock()
@@ -159,18 +140,14 @@ func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	r, ok := e.Map[event]
-	if !ok || r == nil {
+	rules, found := e.Map[event]
+	if !found || rules == nil {
 		return 0, false
 	}
 
-	for n, v := range r.D {
-		if n == rule {
-			return v, true
-		}
-	}
+	val, found := rules.D[rule]
 
-	return 0, false
+	return val, found
 }
 
 // RuleGetI returns an integer rule.
@@ -178,18 +155,14 @@ func (e *Events) RuleGetI(event, rule string) (int, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	r, ok := e.Map[event]
-	if !ok || r == nil {
+	rules, found := e.Map[event]
+	if !found || rules == nil {
 		return 0, false
 	}
 
-	for n, v := range r.I {
-		if n == rule {
-			return v, true
-		}
-	}
+	val, found := rules.I[rule]
 
-	return 0, false
+	return val, found
 }
 
 // RuleGetS returns a string rule.
@@ -197,18 +170,14 @@ func (e *Events) RuleGetS(event, rule string) (string, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	r, ok := e.Map[event]
-	if !ok || r == nil {
+	rules, found := e.Map[event]
+	if !found || rules == nil {
 		return "", false
 	}
 
-	for n, v := range r.S {
-		if n == rule {
-			return v, true
-		}
-	}
+	val, found := rules.S[rule]
 
-	return "", false
+	return val, found
 }
 
 // RuleGetT returns a Time rule.
@@ -216,18 +185,14 @@ func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	r, ok := e.Map[event]
-	if !ok || r == nil {
+	rules, found := e.Map[event]
+	if !found || rules == nil {
 		return time.Now(), false
 	}
 
-	for n, v := range r.T {
-		if n == rule {
-			return v, true
-		}
-	}
+	val, found := rules.T[rule]
 
-	return time.Now(), false
+	return val, found
 }
 
 // RuleSetD updates or sets a Duration rule.
@@ -355,4 +320,30 @@ func (e *Events) RuleDelAll(event, rule string) {
 	delete(e.Map[event].I, rule)
 	delete(e.Map[event].S, rule)
 	delete(e.Map[event].T, rule)
+}
+
+func cloneRules(rules *Rules) *Rules {
+	if rules == nil {
+		return &Rules{
+			D: make(map[string]time.Duration),
+			I: make(map[string]int),
+			S: make(map[string]string),
+			T: make(map[string]time.Time),
+		}
+	}
+
+	cloned := &Rules{
+		Pause: rules.Pause,
+		D:     make(map[string]time.Duration, len(rules.D)),
+		I:     make(map[string]int, len(rules.I)),
+		S:     make(map[string]string, len(rules.S)),
+		T:     make(map[string]time.Time, len(rules.T)),
+	}
+
+	maps.Copy(cloned.D, rules.D)
+	maps.Copy(cloned.I, rules.I)
+	maps.Copy(cloned.S, rules.S)
+	maps.Copy(cloned.T, rules.T)
+
+	return cloned
 }
