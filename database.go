@@ -1,3 +1,4 @@
+// Package subscribe provides a subscription management system.
 package subscribe
 
 import (
@@ -19,7 +20,12 @@ func GetDB(stateFile string) (*Subscribe, error) {
 		Subscribers: make([]*Subscriber, 0),
 	}
 
-	return sub, sub.StateFileLoad()
+	err := sub.StateFileLoad()
+	if err != nil {
+		return nil, err
+	}
+
+	return sub, nil
 }
 
 // StateFileLoad data from a json file.
@@ -28,12 +34,18 @@ func (s *Subscribe) StateFileLoad() error {
 		return nil
 	}
 
-	if buf, err := os.ReadFile(s.stateFile); os.IsNotExist(err) {
+	buf, err := os.ReadFile(s.stateFile)
+	if os.IsNotExist(err) {
 		return s.StateFileSave()
-	} else if err != nil {
-		return fmt.Errorf("file problem: %w", err)
-	} else if err := json.Unmarshal(buf, s); err != nil {
-		return fmt.Errorf("json problem: %w", err)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed reading state file: %w", err)
+	}
+
+	err = json.Unmarshal(buf, s)
+	if err != nil {
+		return fmt.Errorf("failed decoding state file: %w", err)
 	}
 
 	return nil
@@ -41,8 +53,8 @@ func (s *Subscribe) StateFileLoad() error {
 
 // StateGetJSON returns the state data in json format.
 func (s *Subscribe) StateGetJSON() (string, error) {
-	s.Events.RLock()
-	defer s.Events.RUnlock()
+	s.Events.mu.RLock()
+	defer s.Events.mu.RUnlock()
 
 	b, err := json.Marshal(s)
 
@@ -51,16 +63,22 @@ func (s *Subscribe) StateGetJSON() (string, error) {
 
 // StateFileSave writes out the state file.
 func (s *Subscribe) StateFileSave() error {
+	const stateFileMode = 0o600
+
 	if s.stateFile == "" {
 		return nil
 	}
 
-	s.Events.RLock()
-	defer s.Events.RUnlock()
+	s.Events.mu.RLock()
+	defer s.Events.mu.RUnlock()
 
-	if buf, err := json.Marshal(s); err != nil {
+	buf, err := json.Marshal(s)
+	if err != nil {
 		return fmt.Errorf("marshaling json: %w", err)
-	} else if err = os.WriteFile(s.stateFile, buf, 0o600); err != nil { //nolint:gomnd
+	}
+
+	err = os.WriteFile(s.stateFile, buf, stateFileMode)
+	if err != nil {
 		return fmt.Errorf("writing file: %w", err)
 	}
 
@@ -71,10 +89,10 @@ func (s *Subscribe) StateFileSave() error {
 func (s *Subscribe) StateFileRelocate(newPath string) error {
 	s.stateFile, newPath = newPath, s.stateFile // swap places
 
-	if err := s.StateFileLoad(); err != nil {
+	err := s.StateFileLoad()
+	if err != nil {
 		s.stateFile = newPath // got an error, put it back.
-		return err
 	}
 
-	return nil
+	return err
 }

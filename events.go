@@ -12,10 +12,10 @@ import (
 
 // Names returns all the configured event names.
 func (e *Events) Names() []string {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
-	names := []string{}
+	names := make([]string, 0, len(e.Map))
 
 	for name := range e.Map {
 		names = append(names, name)
@@ -28,16 +28,16 @@ func (e *Events) Names() []string {
 
 // Len returns the number of configured events.
 func (e *Events) Len() int {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	return len(e.Map)
 }
 
 // Name finds an event case insentively.
 func (e *Events) Name(event string) string {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	if _, ok := e.Map[event]; ok {
 		return event
@@ -54,8 +54,8 @@ func (e *Events) Name(event string) string {
 
 // Exists returns true if an event exists.
 func (e *Events) Exists(event string) bool {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	if _, ok := e.Map[event]; ok {
 		return true
@@ -66,8 +66,8 @@ func (e *Events) Exists(event string) bool {
 
 // New adds an event.
 func (e *Events) New(event string, rules *Rules) error {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; ok {
 		return ErrEventExists
@@ -107,8 +107,8 @@ func (e *Events) UnPause(event string) error {
 // Pause (or unpause with 0 duration) a subscriber's event subscription.
 // Returns an error only if the event subscription is not found.
 func (e *Events) Pause(event string, duration time.Duration) error {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return ErrEventNotFound
@@ -122,8 +122,8 @@ func (e *Events) Pause(event string, duration time.Duration) error {
 // IsPaused returns true if the event's notifications are pasued.
 // Returns true if the event subscription does not exist.
 func (e *Events) IsPaused(event string) bool {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	info, ok := e.Map[event]
 	if !ok {
@@ -135,8 +135,8 @@ func (e *Events) IsPaused(event string) bool {
 
 // PauseTime returns the pause time for an event.
 func (e *Events) PauseTime(event string) time.Time {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	info, ok := e.Map[event]
 	if !ok {
@@ -148,16 +148,16 @@ func (e *Events) PauseTime(event string) time.Time {
 
 // Remove deletes an event.
 func (e *Events) Remove(event string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	delete(e.Map, event)
 }
 
 // RuleGetD returns a Duration rule.
 func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	r, ok := e.Map[event]
 	if !ok || r == nil {
@@ -175,8 +175,8 @@ func (e *Events) RuleGetD(event, rule string) (time.Duration, bool) {
 
 // RuleGetI returns an integer rule.
 func (e *Events) RuleGetI(event, rule string) (int, bool) {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	r, ok := e.Map[event]
 	if !ok || r == nil {
@@ -194,8 +194,8 @@ func (e *Events) RuleGetI(event, rule string) (int, bool) {
 
 // RuleGetS returns a string rule.
 func (e *Events) RuleGetS(event, rule string) (string, bool) {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	r, ok := e.Map[event]
 	if !ok || r == nil {
@@ -213,8 +213,8 @@ func (e *Events) RuleGetS(event, rule string) (string, bool) {
 
 // RuleGetT returns a Time rule.
 func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
-	e.RLock()
-	defer e.RUnlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	r, ok := e.Map[event]
 	if !ok || r == nil {
@@ -232,8 +232,8 @@ func (e *Events) RuleGetT(event, rule string) (time.Time, bool) {
 
 // RuleSetD updates or sets a Duration rule.
 func (e *Events) RuleSetD(event, rule string, val time.Duration) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return
@@ -248,8 +248,8 @@ func (e *Events) RuleSetD(event, rule string, val time.Duration) {
 
 // RuleSetI updates or sets an integer rule.
 func (e *Events) RuleSetI(event, rule string, val int) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return
@@ -263,9 +263,9 @@ func (e *Events) RuleSetI(event, rule string, val int) {
 }
 
 // RuleSetS updates or sets a string rule.
-func (e *Events) RuleSetS(event, rule string, val string) {
-	e.Lock()
-	defer e.Unlock()
+func (e *Events) RuleSetS(event, rule, val string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return
@@ -280,8 +280,8 @@ func (e *Events) RuleSetS(event, rule string, val string) {
 
 // RuleSetT updates or sets a Time rule.
 func (e *Events) RuleSetT(event, rule string, val time.Time) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return
@@ -296,8 +296,8 @@ func (e *Events) RuleSetT(event, rule string, val time.Time) {
 
 // RuleDelD deletes a Duration rule.
 func (e *Events) RuleDelD(event, rule string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok || e.Map[event].D == nil {
 		return
@@ -308,8 +308,8 @@ func (e *Events) RuleDelD(event, rule string) {
 
 // RuleDelI deletes an integer rule.
 func (e *Events) RuleDelI(event, rule string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok || e.Map[event].I == nil {
 		return
@@ -320,8 +320,8 @@ func (e *Events) RuleDelI(event, rule string) {
 
 // RuleDelS deletes a string rule.
 func (e *Events) RuleDelS(event, rule string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok || e.Map[event].S == nil {
 		return
@@ -332,8 +332,8 @@ func (e *Events) RuleDelS(event, rule string) {
 
 // RuleDelT deletes a Time rule.
 func (e *Events) RuleDelT(event, rule string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok || e.Map[event].T == nil {
 		return
@@ -344,8 +344,8 @@ func (e *Events) RuleDelT(event, rule string) {
 
 // RuleDelAll deletes rules of any type with a specific name.
 func (e *Events) RuleDelAll(event, rule string) {
-	e.Lock()
-	defer e.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	if _, ok := e.Map[event]; !ok {
 		return

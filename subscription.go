@@ -20,11 +20,11 @@ func (s *Subscriber) Subscribe(event string) error {
 // Call this method when your event fires, collect the subscribers and send
 // them notifications in your app. Subscribers can be people. Or functions.
 func (s *Subscribe) GetSubscribers(eventName string) []*Subscriber {
-	var subscribers []*Subscriber
+	subscribers := make([]*Subscriber, len(s.Subscribers))
 
-	for _, sub := range s.Subscribers {
+	for idx, sub := range s.Subscribers {
 		if !sub.Ignored && s.checkAPI(sub.API) && !sub.Events.IsPaused(eventName) {
-			subscribers = append(subscribers, sub)
+			subscribers[idx] = sub
 		}
 	}
 
