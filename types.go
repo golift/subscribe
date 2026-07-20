@@ -42,6 +42,8 @@ type Subscriber struct {
 	Admin bool `json:"isAdmin"`
 	// Ignored will exclude a user from GetSubscribers().
 	Ignored bool `json:"ignored"`
+	// FirstSeen is when this subscriber record was first created. Zero if unknown (legacy rows).
+	FirstSeen time.Time `json:"firstSeen,omitzero"`
 }
 
 // Events represents the map of tracked global Events.

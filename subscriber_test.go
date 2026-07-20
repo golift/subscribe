@@ -101,15 +101,33 @@ func TestCreateSubWithID(t *testing.T) {
 	assert.EqualValues(t, 10, first.ID)
 	assert.True(t, first.Admin)
 	assert.False(t, first.Ignored)
+	assert.False(t, first.FirstSeen.IsZero())
 	assert.Len(t, sub.Subscribers, 1)
 
+	seen := first.FirstSeen
 	second := sub.CreateSubWithID(10, "contact-new", "api", false, true)
 	require.NotNil(t, second)
 	assert.Same(t, first, second)
 	assert.False(t, second.Admin)
 	assert.True(t, second.Ignored)
 	assert.Equal(t, "contact", second.Contact)
+	assert.Equal(t, seen, second.FirstSeen)
 	assert.Len(t, sub.Subscribers, 1)
+}
+
+func TestDeleteSubscriber(t *testing.T) {
+	t.Parallel()
+
+	sub := &Subscribe{Events: new(Events)}
+	sub.CreateSubWithID(10, "a", "api", false, false)
+	sub.CreateSubWithID(20, "b", "api", false, false)
+
+	require.NoError(t, sub.DeleteSubscriber(10, "api"))
+	assert.Len(t, sub.Subscribers, 1)
+	assert.EqualValues(t, 20, sub.Subscribers[0].ID)
+
+	assert.Equal(t, ErrSubscriberNotFound, sub.DeleteSubscriber(10, "api"))
+	assert.Equal(t, ErrSubscriberNotFound, sub.DeleteSubscriber(0, "api"))
 }
 
 func TestGetSubscriberByID(t *testing.T) {
