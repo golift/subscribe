@@ -1,5 +1,7 @@
 package subscribe
 
+import "time"
+
 /**************************
  *   Subscriber Methods   *
  **************************/
@@ -19,10 +21,11 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 	}
 
 	s.Subscribers = append(s.Subscribers, &Subscriber{
-		Contact: contact,
-		API:     api,
-		Admin:   admin,
-		Ignored: ignore,
+		Contact:   contact,
+		API:       api,
+		Admin:     admin,
+		Ignored:   ignore,
+		FirstSeen: time.Now().UTC(),
 		Events: &Events{
 			Map: make(map[string]*Rules),
 		},
@@ -50,11 +53,12 @@ func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ign
 	}
 
 	sub := &Subscriber{
-		ID:      subID,
-		Contact: contact,
-		API:     api,
-		Admin:   admin,
-		Ignored: ignore,
+		ID:        subID,
+		Contact:   contact,
+		API:       api,
+		Admin:     admin,
+		Ignored:   ignore,
+		FirstSeen: time.Now().UTC(),
 		Events: &Events{
 			Map: make(map[string]*Rules),
 		},
@@ -62,6 +66,26 @@ func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ign
 	s.Subscribers = append(s.Subscribers, sub)
 
 	return sub
+}
+
+// DeleteSubscriber removes a subscriber by ID + API. Returns ErrSubscriberNotFound if missing.
+func (s *Subscribe) DeleteSubscriber(subID int64, api string) error {
+	if subID == 0 {
+		return ErrSubscriberNotFound
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for i, sub := range s.Subscribers {
+		if sub.ID == subID && sub.API == api {
+			s.Subscribers = append(s.Subscribers[:i], s.Subscribers[i+1:]...)
+
+			return nil
+		}
+	}
+
+	return ErrSubscriberNotFound
 }
 
 /* Convenience methods to access specific types of subscribers. */

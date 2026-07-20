@@ -209,12 +209,13 @@ func snapshotSubscriber(sub *Subscriber) *Subscriber {
 	}
 
 	out := &Subscriber{
-		ID:      sub.ID,
-		API:     sub.API,
-		Contact: sub.Contact,
-		Events:  snapshotEvents(sub.Events),
-		Admin:   sub.Admin,
-		Ignored: sub.Ignored,
+		ID:        sub.ID,
+		API:       sub.API,
+		Contact:   sub.Contact,
+		Events:    snapshotEvents(sub.Events),
+		Admin:     sub.Admin,
+		Ignored:   sub.Ignored,
+		FirstSeen: sub.FirstSeen,
 	}
 
 	if sub.Meta != nil {
