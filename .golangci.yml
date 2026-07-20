@@ -6,6 +6,7 @@ linters:
     - depguard
     - wsl
     - testpackage
+    - gomodguard # deprecated
   settings:
     gocritic:
       enable-all: true

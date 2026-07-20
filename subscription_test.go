@@ -14,22 +14,24 @@ func TestCheckAPI(t *testing.T) {
 
 	assertions := assert.New(t)
 
+	const event = "event"
+
 	subscriber := &Subscribe{Events: new(Events)}
 	assertions.True(subscriber.checkAPI("test_string"), "an empty slice must always return true")
 
-	subscriber.EnableAPIs = []string{"event", "test_string"}
+	subscriber.EnableAPIs = []string{event, "test_string"}
 	assertions.True(subscriber.checkAPI("test_string://event"), "test_string is an allowed api prefix")
 
-	subscriber.EnableAPIs = []string{"event", "any"}
+	subscriber.EnableAPIs = []string{event, "any"}
 	assertions.True(subscriber.checkAPI("test_string"), "any as an allowed value must return true")
 
-	subscriber.EnableAPIs = []string{"event", "all"}
+	subscriber.EnableAPIs = []string{event, "all"}
 	assertions.True(subscriber.checkAPI("test_string"), "all as an allowed value must return true")
 
-	subscriber.EnableAPIs = []string{"event", "test_string"}
+	subscriber.EnableAPIs = []string{event, "test_string"}
 	assertions.True(subscriber.checkAPI("test_string"), "test_string is an allowed api")
 
-	subscriber.EnableAPIs = []string{"event", "test_string2"}
+	subscriber.EnableAPIs = []string{event, "test_string2"}
 	assertions.False(subscriber.checkAPI("test_string"), "test_string is not an allowed api")
 }
 
