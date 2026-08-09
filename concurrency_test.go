@@ -165,6 +165,7 @@ func writeSubscriberState(subscriber *Subscriber, id int) {
 		subscriber.SetAdmin(j%2 == 0)
 		subscriber.SetIgnored(j%3 == 0)
 		subscriber.SetContact("contact_" + strconv.Itoa(j%4))
+		subscriber.SetContactIfEmpty("filled")
 		subscriber.SetMeta(key, j)
 		subscriber.DeleteMeta(key)
 	}

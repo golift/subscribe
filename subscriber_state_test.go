@@ -33,6 +33,27 @@ func TestSubscriberStateAccessors(t *testing.T) {
 	assert.False(t, sub.IsIgnored())
 }
 
+func TestSetContactIfEmpty(t *testing.T) {
+	t.Parallel()
+
+	sub := &Subscriber{ID: 1, API: testAPI}
+
+	assert.True(t, sub.SetContactIfEmpty("display name"))
+	assert.Equal(t, "display name", sub.GetContact())
+
+	// An existing name wins, including one an admin just chose.
+	assert.False(t, sub.SetContactIfEmpty("other name"))
+	assert.Equal(t, "display name", sub.GetContact())
+
+	// Nothing to fill with is a no-op, not a wipe.
+	assert.False(t, sub.SetContactIfEmpty(""))
+	assert.Equal(t, "display name", sub.GetContact())
+
+	var missing *Subscriber
+
+	assert.False(t, missing.SetContactIfEmpty("nobody"))
+}
+
 func TestSubscriberMetaAccessors(t *testing.T) {
 	t.Parallel()
 

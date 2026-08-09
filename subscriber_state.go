@@ -87,6 +87,27 @@ func (s *Subscriber) SetContact(contact string) {
 	s.Contact = contact
 }
 
+// SetContactIfEmpty fills a blank contact and reports whether it did. Useful
+// when a chat provider offers a display name that should never clobber a name
+// the subscriber or an admin already chose. Get-then-Set cannot do this: a
+// rename landing between the two calls would be overwritten.
+func (s *Subscriber) SetContactIfEmpty(contact string) bool {
+	if s == nil || contact == "" {
+		return false
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.Contact != "" {
+		return false
+	}
+
+	s.Contact = contact
+
+	return true
+}
+
 // GetMeta returns one value from the subscriber's Meta map, and whether it was
 // present.
 func (s *Subscriber) GetMeta(key string) (any, bool) {
