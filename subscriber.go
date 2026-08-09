@@ -43,12 +43,16 @@ func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ign
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i := range s.Subscribers {
-		if subID == s.Subscribers[i].ID && api == s.Subscribers[i].API {
-			s.Subscribers[i].SetAdmin(admin)
-			s.Subscribers[i].SetIgnored(ignore)
+	for idx := range s.Subscribers {
+		if subID == s.Subscribers[idx].ID && api == s.Subscribers[idx].API {
+			s.Subscribers[idx].SetAdmin(admin)
+			s.Subscribers[idx].SetIgnored(ignore)
+			// Fill a blank contact name on update; never wipe an existing one.
+			// A record matched by ID can arrive without a name, and the caller
+			// may only learn it later.
+			s.Subscribers[idx].SetContactIfEmpty(contact)
 			// Already exists, return it.
-			return s.Subscribers[i]
+			return s.Subscribers[idx]
 		}
 	}
 
