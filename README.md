@@ -44,7 +44,7 @@ func main() {
 	fmt.Printf("Sending email to %d subscriber(s):\n", len(subs))
 
 	for _, sub := range subs {
-		fmt.Println(sub.Contact)
+		fmt.Println(sub.GetContact())
 		// send email.
 	}
 
@@ -55,7 +55,7 @@ func main() {
 	fmt.Printf("Sending Text Msg to %d subscriber(s):\n", len(subs))
 
 	for _, sub := range subs {
-		fmt.Println(sub.Contact)
+		fmt.Println(sub.GetContact())
 		// send sms.
 	}
 

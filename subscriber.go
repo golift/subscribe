@@ -12,9 +12,9 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 	defer s.mu.Unlock()
 
 	for i := range s.Subscribers {
-		if contact == s.Subscribers[i].Contact && api == s.Subscribers[i].API {
-			s.Subscribers[i].Admin = admin
-			s.Subscribers[i].Ignored = ignore
+		if api == s.Subscribers[i].API && contact == s.Subscribers[i].GetContact() {
+			s.Subscribers[i].SetAdmin(admin)
+			s.Subscribers[i].SetIgnored(ignore)
 			// Already exists, return it.
 			return s.Subscribers[i]
 		}
@@ -45,8 +45,8 @@ func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ign
 
 	for i := range s.Subscribers {
 		if subID == s.Subscribers[i].ID && api == s.Subscribers[i].API {
-			s.Subscribers[i].Admin = admin
-			s.Subscribers[i].Ignored = ignore
+			s.Subscribers[i].SetAdmin(admin)
+			s.Subscribers[i].SetIgnored(ignore)
 			// Already exists, return it.
 			return s.Subscribers[i]
 		}
@@ -96,7 +96,7 @@ func (s *Subscribe) GetSubscriber(contact, api string) (*Subscriber, error) {
 	defer s.mu.RUnlock()
 
 	for _, sub := range s.Subscribers {
-		if sub.Contact == contact && sub.API == api {
+		if sub.API == api && sub.GetContact() == contact {
 			return sub, nil
 		}
 	}
@@ -130,7 +130,7 @@ func (s *Subscribe) GetAdmins() []*Subscriber {
 	subs := make([]*Subscriber, 0, len(s.Subscribers))
 
 	for idx := range s.Subscribers {
-		if s.Subscribers[idx].Admin {
+		if s.Subscribers[idx].IsAdmin() {
 			subs = append(subs, s.Subscribers[idx])
 		}
 	}
@@ -146,7 +146,7 @@ func (s *Subscribe) GetIgnored() []*Subscriber {
 	subs := make([]*Subscriber, 0, len(s.Subscribers))
 
 	for idx := range s.Subscribers {
-		if s.Subscribers[idx].Ignored {
+		if s.Subscribers[idx].IsIgnored() {
 			subs = append(subs, s.Subscribers[idx])
 		}
 	}
