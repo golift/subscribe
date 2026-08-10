@@ -38,7 +38,9 @@ type Subscriber struct {
 	// ID is optional. If it provided, this is used as the _match_.
 	ID int64 `json:"id"`
 	// Meta is optional. This library does not use this value.
-	// Use GetMeta/SetMeta/DeleteMeta.
+	// Use GetMeta/SetMeta/DeleteMeta, and store only values you will not mutate
+	// in place: the map is copied for callers and for the state file, but values
+	// inside it are shared.
 	Meta map[string]any `json:"meta"`
 	// API is the type of API the subscriber is subscribed with. Used to filter results.
 	API string `json:"api"`

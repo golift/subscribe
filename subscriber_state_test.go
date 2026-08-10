@@ -116,8 +116,8 @@ func TestSubscriberStateNilReceiver(t *testing.T) {
 	sub.DeleteMeta("key")
 }
 
-// TestSnapshotSubscriberCopiesMeta: the state file snapshot must deep-copy Meta,
-// or the marshaler walks a map the application can still be writing.
+// TestSnapshotSubscriberCopiesMeta: the snapshot must copy the Meta map, or the
+// marshaler walks a map the application can still be writing.
 func TestSnapshotSubscriberCopiesMeta(t *testing.T) {
 	t.Parallel()
 
@@ -133,4 +133,36 @@ func TestSnapshotSubscriberCopiesMeta(t *testing.T) {
 	assert.Equal(t, "value", out.Meta["key"])
 
 	assert.Nil(t, snapshotSubscriber(nil))
+}
+
+// TestMetaValuesAreShared pins down the documented contract: the map is copied,
+// the values in it are not. Meta holds arbitrary caller types, which the library
+// cannot walk, so callers must treat stored values as immutable and replace them
+// with SetMeta rather than editing them in place.
+func TestMetaValuesAreShared(t *testing.T) {
+	t.Parallel()
+
+	sub := &Subscriber{ID: 1, API: testAPI}
+	sub.SetMeta("user", map[string]any{"username": "someone"})
+
+	// Adding to the map GetAllMeta returns is safe: it never reaches the record.
+	all := sub.GetAllMeta()
+	all["extra"] = true
+
+	_, found := sub.GetMeta("extra")
+	assert.False(t, found)
+
+	// The value inside it is shared, though, so writing through it does reach
+	// the record — and every snapshot of it.
+	nested, isMap := all["user"].(map[string]any)
+	require.True(t, isMap)
+
+	nested["username"] = "renamed"
+
+	snap := snapshotSubscriber(sub)
+	require.NotNil(t, snap)
+
+	snapped, isMap := snap.Meta["user"].(map[string]any)
+	require.True(t, isMap)
+	assert.Equal(t, "renamed", snapped["username"])
 }

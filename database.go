@@ -208,10 +208,9 @@ func snapshotSubscriber(sub *Subscriber) *Subscriber {
 		return nil
 	}
 
-	// Snapshot the events before taking the record's lock: the lock order is
-	// Subscribe.mu, Subscriber.mu, then Events.mu, and this runs under the first.
-	events := snapshotEvents(sub.Events)
-
+	// Hold the record's lock across the whole copy, events included, so the
+	// snapshot cannot mix fields from before a change with events from after.
+	// This nests Events.mu inside Subscriber.mu, the documented order.
 	sub.mu.RLock()
 	defer sub.mu.RUnlock()
 
@@ -219,7 +218,7 @@ func snapshotSubscriber(sub *Subscriber) *Subscriber {
 		ID:        sub.ID,
 		API:       sub.API,
 		Contact:   sub.Contact,
-		Events:    events,
+		Events:    snapshotEvents(sub.Events),
 		Admin:     sub.Admin,
 		Ignored:   sub.Ignored,
 		FirstSeen: sub.FirstSeen,

@@ -108,8 +108,16 @@ func (s *Subscriber) SetContactIfEmpty(contact string) bool {
 	return true
 }
 
+// Values stored in Meta must be treated as immutable. The library copies the
+// Meta map — for a caller, and again for the state file — but a copy of a map
+// of `any` is one level deep, so a slice, map or pointer stored in it stays
+// shared with every copy. Mutating one of those in place sidesteps the lock and
+// can race the JSON marshaling in StateFileSave. Replace the value with SetMeta
+// instead of editing what is already in there. A deep copy is not an option
+// here: Meta holds arbitrary caller types, which the library cannot walk.
+
 // GetMeta returns one value from the subscriber's Meta map, and whether it was
-// present.
+// present. Treat the value as immutable; see the note above.
 func (s *Subscriber) GetMeta(key string) (any, bool) {
 	if s == nil {
 		return nil, false
@@ -124,7 +132,8 @@ func (s *Subscriber) GetMeta(key string) (any, bool) {
 }
 
 // SetMeta stores one value in the subscriber's Meta map, creating the map when
-// it does not exist yet.
+// it does not exist yet. The value is stored as given, not copied, so hand over
+// something that will not be mutated afterwards.
 func (s *Subscriber) SetMeta(key string, value any) {
 	if s == nil {
 		return
@@ -153,7 +162,9 @@ func (s *Subscriber) DeleteMeta(key string) {
 }
 
 // GetAllMeta returns a copy of the subscriber's Meta map. Ranging over Meta
-// directly races anything that writes it; range over this instead.
+// directly races anything that writes it; range over this instead. Adding to or
+// deleting from the returned map is safe and does not touch the record, but the
+// values are shared with it — treat them as immutable, as above.
 func (s *Subscriber) GetAllMeta() map[string]any {
 	if s == nil {
 		return nil
