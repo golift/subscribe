@@ -25,7 +25,7 @@ func (s *Subscribe) GetSubscribers(eventName string) []*Subscriber {
 
 	subscribers := make([]*Subscriber, 0, len(s.Subscribers))
 	for _, sub := range s.Subscribers {
-		if !sub.Ignored && s.checkAPILocked(sub.API) && !sub.Events.IsPaused(eventName) {
+		if !sub.IsIgnored() && s.checkAPILocked(sub.API) && !sub.Events.IsPaused(eventName) {
 			subscribers = append(subscribers, sub)
 		}
 	}

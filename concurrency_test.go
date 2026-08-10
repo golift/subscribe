@@ -126,3 +126,74 @@ func runSubscribeOps(t *testing.T, sub *Subscribe, contact string) {
 		}
 	}
 }
+
+// TestSubscriberStateConcurrentAccess races the accessors against the library
+// readers. The consuming application flips Admin/Ignored/Contact/Meta from its
+// own goroutines while notifications fan out and the state file is written, and
+// it holds no Subscribe lock while doing so — writing those fields directly is
+// what the accessors exist to avoid.
+func TestSubscriberStateConcurrentAccess(t *testing.T) {
+	t.Parallel()
+
+	stateFile := filepath.Join(t.TempDir(), "state.json")
+	sub, err := GetDB(stateFile)
+	require.NoError(t, err)
+	require.NoError(t, sub.Events.New("evt", nil))
+
+	subscriber := sub.CreateSubWithID(1, "contact", "api", false, false)
+	require.NotNil(t, subscriber)
+	require.NoError(t, subscriber.Subscribe("evt"))
+
+	var waitGroup sync.WaitGroup
+
+	for i := range 8 {
+		waitGroup.Go(func() { writeSubscriberState(subscriber, i) })
+		waitGroup.Go(func() { readSubscriberState(t, sub, subscriber) })
+	}
+
+	waitGroup.Wait()
+
+	// The record must survive the hammering intact.
+	require.Equal(t, int64(1), subscriber.ID)
+	require.NotEmpty(t, subscriber.GetContact())
+}
+
+func writeSubscriberState(subscriber *Subscriber, id int) {
+	key := "key_" + strconv.Itoa(id)
+
+	for j := range 250 {
+		subscriber.SetAdmin(j%2 == 0)
+		subscriber.SetIgnored(j%3 == 0)
+		subscriber.SetContact("contact_" + strconv.Itoa(j%4))
+		subscriber.SetContactIfEmpty("filled")
+		subscriber.SetMeta(key, j)
+		subscriber.DeleteMeta(key)
+	}
+}
+
+func readSubscriberState(t *testing.T, sub *Subscribe, subscriber *Subscriber) {
+	t.Helper()
+
+	for range 250 {
+		subscriber.IsAdmin()
+		subscriber.IsIgnored()
+		subscriber.GetContact()
+		subscriber.GetAllMeta()
+		_, _ = subscriber.GetMeta("key_0")
+
+		sub.GetAdmins()
+		sub.GetIgnored()
+		sub.GetSubscribers("evt")
+		_, _ = sub.GetSubscriber("contact_0", "api")
+		_, _ = sub.GetSubscriberByID(1, "api")
+		_, _ = sub.StateGetJSON()
+		sub.CreateSubWithID(1, "contact", "api", false, false)
+
+		err := sub.StateFileSave()
+		if err != nil {
+			t.Errorf("state save failed: %v", err)
+
+			return
+		}
+	}
+}

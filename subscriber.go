@@ -12,9 +12,9 @@ func (s *Subscribe) CreateSub(contact, api string, admin, ignore bool) *Subscrib
 	defer s.mu.Unlock()
 
 	for i := range s.Subscribers {
-		if contact == s.Subscribers[i].Contact && api == s.Subscribers[i].API {
-			s.Subscribers[i].Admin = admin
-			s.Subscribers[i].Ignored = ignore
+		if api == s.Subscribers[i].API && contact == s.Subscribers[i].GetContact() {
+			s.Subscribers[i].SetAdmin(admin)
+			s.Subscribers[i].SetIgnored(ignore)
 			// Already exists, return it.
 			return s.Subscribers[i]
 		}
@@ -43,12 +43,16 @@ func (s *Subscribe) CreateSubWithID(subID int64, contact, api string, admin, ign
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i := range s.Subscribers {
-		if subID == s.Subscribers[i].ID && api == s.Subscribers[i].API {
-			s.Subscribers[i].Admin = admin
-			s.Subscribers[i].Ignored = ignore
+	for idx := range s.Subscribers {
+		if subID == s.Subscribers[idx].ID && api == s.Subscribers[idx].API {
+			s.Subscribers[idx].SetAdmin(admin)
+			s.Subscribers[idx].SetIgnored(ignore)
+			// Fill a blank contact name on update; never wipe an existing one.
+			// A record matched by ID can arrive without a name, and the caller
+			// may only learn it later.
+			s.Subscribers[idx].SetContactIfEmpty(contact)
 			// Already exists, return it.
-			return s.Subscribers[i]
+			return s.Subscribers[idx]
 		}
 	}
 
@@ -96,7 +100,7 @@ func (s *Subscribe) GetSubscriber(contact, api string) (*Subscriber, error) {
 	defer s.mu.RUnlock()
 
 	for _, sub := range s.Subscribers {
-		if sub.Contact == contact && sub.API == api {
+		if sub.API == api && sub.GetContact() == contact {
 			return sub, nil
 		}
 	}
@@ -130,7 +134,7 @@ func (s *Subscribe) GetAdmins() []*Subscriber {
 	subs := make([]*Subscriber, 0, len(s.Subscribers))
 
 	for idx := range s.Subscribers {
-		if s.Subscribers[idx].Admin {
+		if s.Subscribers[idx].IsAdmin() {
 			subs = append(subs, s.Subscribers[idx])
 		}
 	}
@@ -146,7 +150,7 @@ func (s *Subscribe) GetIgnored() []*Subscriber {
 	subs := make([]*Subscriber, 0, len(s.Subscribers))
 
 	for idx := range s.Subscribers {
-		if s.Subscribers[idx].Ignored {
+		if s.Subscribers[idx].IsIgnored() {
 			subs = append(subs, s.Subscribers[idx])
 		}
 	}

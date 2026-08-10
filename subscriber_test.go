@@ -113,6 +113,16 @@ func TestCreateSubWithID(t *testing.T) {
 	assert.Equal(t, "contact", second.Contact)
 	assert.Equal(t, seen, second.FirstSeen)
 	assert.Len(t, sub.Subscribers, 1)
+
+	// A record can be created before its name is known; the next update fills
+	// the blank rather than leaving it nameless forever.
+	blank := sub.CreateSubWithID(11, "", "api", false, false)
+	require.NotNil(t, blank)
+	assert.Empty(t, blank.Contact)
+
+	again := sub.CreateSubWithID(11, "filled", "api", false, false)
+	require.Same(t, blank, again)
+	assert.Equal(t, "filled", again.Contact)
 }
 
 func TestDeleteSubscriber(t *testing.T) {

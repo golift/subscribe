@@ -208,6 +208,12 @@ func snapshotSubscriber(sub *Subscriber) *Subscriber {
 		return nil
 	}
 
+	// Hold the record's lock across the whole copy, events included, so the
+	// snapshot cannot mix fields from before a change with events from after.
+	// This nests Events.mu inside Subscriber.mu, the documented order.
+	sub.mu.RLock()
+	defer sub.mu.RUnlock()
+
 	out := &Subscriber{
 		ID:        sub.ID,
 		API:       sub.API,
