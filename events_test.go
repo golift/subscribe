@@ -61,7 +61,7 @@ func TestRemoveEvent(t *testing.T) {
 	sub.Events.Map["some_event"] = nil
 	sub.Events.Map["some_event2"] = nil
 
-	// Subscribe asert user to one of them.
+	// Subscribe check user to one of them.
 	subscriber := sub.CreateSub("test_contact", "api", true, false)
 	require.NoError(t, subscriber.Subscribe("some_event2"))
 	sub.EventRemove("some_event2")
