@@ -1,26 +1,22 @@
-version: '2'
+version: "2"
 linters:
   default: all
   disable:
-    - exhaustruct
-    - depguard
-    - wsl
-    - testpackage
-    - gomodguard # deprecated
+    - wsl # deprecated.
+    - exhaustruct # deprecated.
+    - exhaustruct_v5 # constructors leave mu and optional fields at zero.
+    - gomodguard # deprecated.
+    - depguard # not useful.
+    - testpackage # tests use unexported state.
   settings:
     gocritic:
       enable-all: true
+      disabled-checks:
+        - whyNoLint
+        - commentedOutCode
       settings:
         unnamedResult:
           checkExported: true
-    errcheck:
-      check-type-assertions: true
-      check-blank: false
-      disable-default-exclusions: false
-      exclude-functions:
-        - (*os.File).Close
-        - (io.Closer).Close
-
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

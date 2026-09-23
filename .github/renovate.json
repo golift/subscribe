@@ -2,21 +2,21 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "default:automergeDigest"
+    "default:automergeDigest",
+    "helpers:pinGitHubActionDigestsToSemver"
   ],
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
   "packageRules": [
     {
-      "matchDatasources": [
-        "go",
-        "github-releases",
-        "github-tags"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
+      "description": "Automerge non-major Go module updates when checks pass",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge GitHub Actions updates, including majors, when checks pass",
+      "matchManagers": ["github-actions"],
       "automerge": true
     }
   ]
